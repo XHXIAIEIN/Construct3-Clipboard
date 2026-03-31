@@ -3,28 +3,26 @@
   "type": "events",
   "items": [
     {
-      "type": "variable",
+      "eventType": "variable",
       "name": "Score",
-      "variableType": "number",
+      "type": "number",
       "initialValue": "0",
       "comment": ""
     },
     {
-      "type": "variable",
+      "eventType": "variable",
       "name": "HP",
-      "variableType": "number",
+      "type": "number",
       "initialValue": "3",
       "comment": ""
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "key-is-down",
           "objectClass": "Keyboard",
-          "parameters": {
-            "key": 37
-          }
+          "parameters": {"key": 37}
         }
       ],
       "actions": [
@@ -32,21 +30,17 @@
           "id": "simulate-control",
           "objectClass": "Player",
           "behaviorType": "Platform",
-          "parameters": {
-            "control": "left"
-          }
+          "parameters": {"control": "left"}
         }
       ]
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "on-collision-with-another-object",
           "objectClass": "Player",
-          "parameters": {
-            "object": "Coin"
-          }
+          "parameters": {"object": "Coin"}
         }
       ],
       "actions": [
@@ -58,10 +52,7 @@
         {
           "id": "add-to-eventvar",
           "objectClass": "System",
-          "parameters": {
-            "variable": "Score",
-            "value": "1"
-          }
+          "parameters": {"variable": "Score", "value": "1"}
         }
       ]
     }

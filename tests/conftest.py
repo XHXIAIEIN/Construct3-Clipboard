@@ -10,28 +10,26 @@ def valid_events_basic():
         "type": "events",
         "items": [
             {
-                "type": "variable",
-                "name": "score",
-                "variableType": "number",
+                "eventType": "variable",
+                "name": "Score",
+                "type": "number",
                 "initialValue": "0",
-                "comment": "Player score"
+                "comment": "Player score",
             },
             {
-                "type": "block",
+                "eventType": "block",
                 "conditions": [
-                    {
-                        "id": "is-overlapping",
-                        "objectClass": "Player"
-                    }
+                    {"id": "on-start-of-layout", "objectClass": "System"}
                 ],
                 "actions": [
                     {
-                        "id": "set-value",
-                        "objectClass": "Player"
+                        "id": "set-eventvar-value",
+                        "objectClass": "System",
+                        "parameters": {"variable": "Score", "value": "0"},
                     }
-                ]
-            }
-        ]
+                ],
+            },
+        ],
     }
 
 
@@ -43,28 +41,41 @@ def valid_object_types():
         "type": "object-types",
         "items": [
             {
+                "name": "Player",
                 "plugin-id": "Sprite",
-                "animations": [],
-                "behaviorTypes": [
-                    {
-                        "id": "Platform",
-                        "plugin-id": "Platform"
-                    }
-                ],
+                "isGlobal": False,
+                "editorNewInstanceIsReplica": True,
+                "instanceVariables": [],
+                "behaviorTypes": [{"behaviorId": "Platform", "name": "Platform"}],
                 "effectTypes": [],
-                "instanceVariables": []
+                "animations": {
+                    "items": [
+                        {
+                            "frames": [
+                                {
+                                    "width": 32,
+                                    "height": 32,
+                                    "originX": 0.5,
+                                    "originY": 0.5,
+                                    "imageDataIndex": 0,
+                                }
+                            ],
+                            "name": "Default",
+                        }
+                    ],
+                    "subfolders": [],
+                },
             }
-        ]
+        ],
+        "families": [],
+        "folders": [],
     }
 
 
 @pytest.fixture
 def invalid_missing_header():
     """Clipboard missing the required is-c3-clipboard-data field."""
-    return {
-        "type": "events",
-        "items": []
-    }
+    return {"type": "events", "items": []}
 
 
 @pytest.fixture
@@ -75,20 +86,15 @@ def invalid_empty_parameters():
         "type": "events",
         "items": [
             {
-                "type": "block",
-                "conditions": [
-                    {
-                        "id": "always",
-                        "objectClass": "System"
-                    }
-                ],
+                "eventType": "block",
+                "conditions": [{"id": "every-tick", "objectClass": "System"}],
                 "actions": [
                     {
-                        "id": "set-value",
-                        "objectClass": "Player",
-                        "parameters": {}
+                        "id": "destroy",
+                        "objectClass": "Enemy",
+                        "parameters": {},
                     }
-                ]
+                ],
             }
-        ]
+        ],
     }

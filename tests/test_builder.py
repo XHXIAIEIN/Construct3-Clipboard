@@ -92,15 +92,15 @@ class TestBuildCondition:
 class TestBuildVariable:
     def test_default_variable(self):
         var = build_variable("score")
-        assert var["type"] == "variable"
+        assert var["eventType"] == "variable"
         assert var["name"] == "score"
-        assert var["variableType"] == "number"
+        assert var["type"] == "number"
         assert var["initialValue"] == "0"
         assert "comment" in var  # always included
 
     def test_variable_with_all_args(self):
         var = build_variable("name", var_type="string", initial_value="Alice", comment="Player name")
-        assert var["variableType"] == "string"
+        assert var["type"] == "string"
         assert var["initialValue"] == "Alice"
         assert var["comment"] == "Player name"
 
@@ -111,7 +111,7 @@ class TestBuildVariable:
 
     def test_variable_boolean_type(self):
         var = build_variable("alive", var_type="boolean", initial_value="true")
-        assert var["variableType"] == "boolean"
+        assert var["type"] == "boolean"
 
 
 # ---------------------------------------------------------------------------
@@ -121,12 +121,12 @@ class TestBuildVariable:
 class TestBuildComment:
     def test_basic_comment(self):
         c = build_comment("This is a comment")
-        assert c["type"] == "comment"
+        assert c["eventType"] == "comment"
         assert c["text"] == "This is a comment"
 
     def test_empty_comment(self):
         c = build_comment("")
-        assert c["type"] == "comment"
+        assert c["eventType"] == "comment"
         assert c["text"] == ""
 
 
@@ -137,7 +137,7 @@ class TestBuildComment:
 class TestBuildGroup:
     def test_basic_group(self):
         g = build_group("My Group")
-        assert g["type"] == "group"
+        assert g["eventType"] == "group"
         assert g["title"] == "My Group"
 
     def test_group_defaults(self):
@@ -176,13 +176,13 @@ class TestBuildBlock:
         cond = build_condition("always", "System")
         act = build_action("wait", "System")
         b = build_block([cond], [act])
-        assert b["type"] == "block"
+        assert b["eventType"] == "block"
         assert b["conditions"] == [cond]
         assert b["actions"] == [act]
 
     def test_block_empty_conditions_and_actions(self):
         b = build_block([], [])
-        assert b["type"] == "block"
+        assert b["eventType"] == "block"
         assert b["conditions"] == []
         assert b["actions"] == []
 
@@ -219,8 +219,8 @@ class TestBuildScriptAction:
 
     def test_script_has_required_id_fields(self):
         act = build_script_action([""])
-        # Should have objectClass for System or similar
-        assert "objectClass" in act or "id" in act
+        # Script actions use type="script" as their identifier (not "id")
+        assert act.get("type") == "script" or "id" in act
 
 
 # ---------------------------------------------------------------------------
@@ -230,7 +230,7 @@ class TestBuildScriptAction:
 class TestBuildFunctionBlock:
     def test_basic_function_block(self):
         fb = build_function_block("DoThing")
-        assert fb["type"] == "function-block"
+        assert fb["eventType"] == "function-block"
         assert fb["functionName"] == "DoThing"
         assert fb["functionReturnType"] == "none"
         assert isinstance(fb["conditions"], list)

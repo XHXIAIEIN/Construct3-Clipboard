@@ -3,25 +3,25 @@
   "type": "events",
   "items": [
     {
-      "type": "variable",
+      "eventType": "variable",
       "name": "Score",
-      "variableType": "number",
+      "type": "number",
       "initialValue": "0",
       "comment": ""
     },
     {
-      "type": "variable",
+      "eventType": "variable",
       "name": "Lives",
-      "variableType": "number",
+      "type": "number",
       "initialValue": "3",
       "comment": ""
     },
     {
-      "type": "comment",
+      "eventType": "comment",
       "text": "Init"
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "on-start-of-layout",
@@ -72,11 +72,11 @@
       ]
     },
     {
-      "type": "comment",
+      "eventType": "comment",
       "text": "Paddle control"
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "key-is-down",
@@ -98,7 +98,7 @@
       ]
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "key-is-down",
@@ -120,11 +120,11 @@
       ]
     },
     {
-      "type": "comment",
+      "eventType": "comment",
       "text": "Launch ball"
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "on-click",
@@ -164,11 +164,11 @@
       ]
     },
     {
-      "type": "comment",
+      "eventType": "comment",
       "text": "Gameplay"
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "on-collision-with-another-object",
@@ -198,7 +198,7 @@
       ]
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "on-collision-with-another-object",
@@ -232,11 +232,11 @@
       ]
     },
     {
-      "type": "comment",
+      "eventType": "comment",
       "text": "Life loss and relaunch"
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "compare-two-values",
@@ -302,11 +302,11 @@
       ]
     },
     {
-      "type": "comment",
+      "eventType": "comment",
       "text": "Win/Lose"
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "compare-two-values",
@@ -334,7 +334,7 @@
       ]
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "compare-two-values",
@@ -370,7 +370,7 @@
       ]
     },
     {
-      "type": "block",
+      "eventType": "block",
       "conditions": [
         {
           "id": "on-key-pressed",

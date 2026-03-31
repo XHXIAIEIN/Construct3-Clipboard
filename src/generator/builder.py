@@ -77,9 +77,9 @@ def build_variable(
     structural validator's rule that variable definitions should have a comment.
     """
     return {
-        "type": "variable",
+        "eventType": "variable",
         "name": name,
-        "variableType": var_type,
+        "type": var_type,
         "initialValue": initial_value,
         "comment": comment,
     }
@@ -88,7 +88,7 @@ def build_variable(
 def build_comment(text: str) -> dict:
     """Build a comment event node."""
     return {
-        "type": "comment",
+        "eventType": "comment",
         "text": text,
     }
 
@@ -103,7 +103,7 @@ def build_group(
 ) -> dict:
     """Build a group event node."""
     node: dict[str, Any] = {
-        "type": "group",
+        "eventType": "group",
         "title": title,
         "description": description,
         "disabled": disabled,
@@ -121,7 +121,7 @@ def build_block(
 ) -> dict:
     """Build an event block node (conditions + actions)."""
     node: dict[str, Any] = {
-        "type": "block",
+        "eventType": "block",
         "conditions": list(conditions),
         "actions": list(actions),
     }
@@ -141,8 +141,7 @@ def build_script_action(
         language: 'javascript' (default) or 'typescript'.
     """
     return {
-        "id": "run-script",
-        "objectClass": "System",
+        "type": "script",
         "language": language,
         "script": list(lines),
     }
@@ -170,7 +169,7 @@ def build_function_block(
         is_async: Whether the function is async.
     """
     node: dict[str, Any] = {
-        "type": "function-block",
+        "eventType": "function-block",
         "functionName": name,
         "functionReturnType": return_type,
         "description": description,

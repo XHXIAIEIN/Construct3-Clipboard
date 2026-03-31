@@ -73,7 +73,7 @@ class TestEventValidation:
             "is-c3-clipboard-data": True,
             "type": "events",
             "items": [
-                {"type": "variable", "name": "score", "variableType": "number", "initialValue": "0"}
+                {"eventType": "variable", "name": "score", "type": "number", "initialValue": "0"}
             ]
         }
         result = validator.validate(data)
@@ -85,7 +85,7 @@ class TestEventValidation:
             "is-c3-clipboard-data": True,
             "type": "events",
             "items": [
-                {"type": "variable", "variableType": "number", "initialValue": "0", "comment": "x"}
+                {"eventType": "variable", "type": "number", "initialValue": "0", "comment": "x"}
             ]
         }
         result = validator.validate(data)
@@ -97,7 +97,7 @@ class TestEventValidation:
             "is-c3-clipboard-data": True,
             "type": "events",
             "items": [
-                {"type": "variable", "name": "x", "variableType": "float", "initialValue": "0", "comment": ""}
+                {"eventType": "variable", "name": "x", "type": "float", "initialValue": "0", "comment": ""}
             ]
         }
         result = validator.validate(data)
@@ -108,7 +108,7 @@ class TestEventValidation:
         data = {
             "is-c3-clipboard-data": True,
             "type": "events",
-            "items": [{"type": "block"}]
+            "items": [{"eventType": "block"}]
         }
         result = validator.validate(data)
         assert result.passed is False
@@ -120,7 +120,7 @@ class TestEventValidation:
             "type": "events",
             "items": [
                 {
-                    "type": "block",
+                    "eventType": "block",
                     "conditions": [{"id": "always", "objectClass": "System"}]
                 }
             ]
@@ -134,7 +134,7 @@ class TestEventValidation:
             "type": "events",
             "items": [
                 {
-                    "type": "block",
+                    "eventType": "block",
                     "conditions": "not-a-list",
                     "actions": []
                 }
@@ -155,7 +155,7 @@ class TestEventValidation:
                 "type": "events",
                 "items": [
                     {
-                        "type": "block",
+                        "eventType": "block",
                         "conditions": [
                             {"id": "compare", "objectClass": "Player",
                              "parameters": {"0": op}}
@@ -174,7 +174,7 @@ class TestEventValidation:
             "type": "events",
             "items": [
                 {
-                    "type": "block",
+                    "eventType": "block",
                     "conditions": [
                         {"id": "compare", "objectClass": "Player",
                          "parameters": {"0": 6}}  # 6 is out of range
@@ -193,7 +193,7 @@ class TestEventValidation:
             "type": "events",
             "items": [
                 {
-                    "type": "function-block",
+                    "eventType": "function-block",
                     "functionName": "MyFunc",
                     "functionReturnType": "none",
                     "conditions": [],
@@ -210,7 +210,7 @@ class TestEventValidation:
             "type": "events",
             "items": [
                 {
-                    "type": "function-block",
+                    "eventType": "function-block",
                     "functionReturnType": "none",
                     "conditions": [],
                     "actions": []
@@ -226,7 +226,7 @@ class TestEventValidation:
             "type": "events",
             "items": [
                 {
-                    "type": "function-block",
+                    "eventType": "function-block",
                     "functionName": "MyFunc",
                     "functionReturnType": "void",  # not valid
                     "conditions": [],
@@ -243,7 +243,7 @@ class TestEventValidation:
             "type": "events",
             "items": [
                 {
-                    "type": "block",
+                    "eventType": "block",
                     "conditions": [],
                     "actions": [
                         {
@@ -265,7 +265,7 @@ class TestEventValidation:
             "type": "events",
             "items": [
                 {
-                    "type": "block",
+                    "eventType": "block",
                     "conditions": [],
                     "actions": [
                         {
@@ -287,7 +287,7 @@ class TestEventValidation:
             "type": "events",
             "items": [
                 {
-                    "type": "block",
+                    "eventType": "block",
                     "conditions": [],
                     "actions": [
                         {
@@ -308,7 +308,7 @@ class TestEventValidation:
             "is-c3-clipboard-data": True,
             "type": "events",
             "items": [
-                {"type": "unknown-event-type"}
+                {"eventType": "unknown-event-type"}
             ]
         }
         result = validator.validate(data)

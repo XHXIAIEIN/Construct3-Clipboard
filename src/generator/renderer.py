@@ -111,7 +111,7 @@ def _event_metadata(items: list[dict]) -> dict[str, Any]:
     functions = 0
 
     for item in items:
-        t = item.get("type")
+        t = item.get("eventType")
         if t == "block":
             blocks += 1
         elif t == "variable":

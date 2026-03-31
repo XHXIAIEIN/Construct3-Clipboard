@@ -84,14 +84,14 @@ class TestFromIREvents:
         items = result["items"]
 
         # Variable comes first
-        assert items[0]["type"] == "variable"
+        assert items[0]["eventType"] == "variable"
         assert items[0]["name"] == "Score"
-        assert items[0]["variableType"] == "number"
+        assert items[0]["type"] == "number"
         assert items[0]["initialValue"] == "0"
         assert items[0]["comment"] == "Player score"
 
         # Block second
-        assert items[1]["type"] == "block"
+        assert items[1]["eventType"] == "block"
         assert items[1]["conditions"][0]["id"] == "on-start-of-layout"
         assert items[1]["actions"][0]["id"] == "set-eventvar-value"
         assert items[1]["actions"][0]["parameters"] == {"0": "Score", "1": "0"}
@@ -145,7 +145,7 @@ class TestFromIREvents:
         result = gen.from_ir(ir)
         block = result["items"][0]
         assert "children" in block
-        assert block["children"][0]["type"] == "block"
+        assert block["children"][0]["eventType"] == "block"
         assert_valid(result, validator)
 
     def test_inverted_condition(self, gen, validator):
@@ -177,8 +177,8 @@ class TestFromIREvents:
             ],
         }
         result = gen.from_ir(ir)
-        assert result["items"][0]["type"] == "variable"
-        assert result["items"][1]["type"] == "block"
+        assert result["items"][0]["eventType"] == "variable"
+        assert result["items"][1]["eventType"] == "block"
         assert_valid(result, validator)
 
 
@@ -212,11 +212,11 @@ class TestFromIRWithGroups:
         items = result["items"]
         assert len(items) == 1
         group = items[0]
-        assert group["type"] == "group"
+        assert group["eventType"] == "group"
         assert group["title"] == "Movement"
         assert group["description"] == "Handles player movement"
         assert len(group["children"]) == 1
-        assert group["children"][0]["type"] == "block"
+        assert group["children"][0]["eventType"] == "block"
         assert_valid(result, validator)
 
     def test_empty_group(self, gen, validator):
@@ -228,7 +228,7 @@ class TestFromIRWithGroups:
         }
         result = gen.from_ir(ir)
         group = result["items"][0]
-        assert group["type"] == "group"
+        assert group["eventType"] == "group"
         assert group["children"] == []
         assert_valid(result, validator)
 
@@ -289,7 +289,7 @@ class TestFromIRWithFunctionBlocks:
         items = result["items"]
         assert len(items) == 1
         fb = items[0]
-        assert fb["type"] == "function-block"
+        assert fb["eventType"] == "function-block"
         assert fb["functionName"] == "add"
         assert fb["functionReturnType"] == "number"
         assert fb["isAsync"] is False
@@ -297,7 +297,7 @@ class TestFromIRWithFunctionBlocks:
 
         # Script action
         script_act = fb["actions"][0]
-        assert script_act["id"] == "run-script"
+        assert script_act.get("type") == "script"
         assert script_act["language"] == "javascript"
         assert script_act["script"] == ["return localVars.a + localVars.b;"]
 
@@ -403,8 +403,8 @@ class TestCombinedIR:
         }
         result = gen.from_ir(ir)
         items = result["items"]
-        assert items[0]["type"] == "variable"
-        assert items[1]["type"] == "block"
-        assert items[2]["type"] == "group"
-        assert items[3]["type"] == "function-block"
+        assert items[0]["eventType"] == "variable"
+        assert items[1]["eventType"] == "block"
+        assert items[2]["eventType"] == "group"
+        assert items[3]["eventType"] == "function-block"
         assert_valid(result, validator)

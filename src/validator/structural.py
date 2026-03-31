@@ -126,13 +126,13 @@ class StructuralValidator:
             result.add_error(f"{prefix}: event item must be an object")
             return
 
-        event_type = item.get("type")
+        event_type = item.get("eventType")
         if event_type is None:
-            result.add_error(f"{prefix}: missing 'type' field")
+            result.add_error(f"{prefix}: missing 'eventType' field")
             return
         if event_type not in VALID_EVENT_TYPES:
             result.add_error(
-                f"{prefix}: invalid event type '{event_type}'. "
+                f"{prefix}: invalid eventType '{event_type}'. "
                 f"Must be one of: {sorted(VALID_EVENT_TYPES)}"
             )
             return
@@ -157,10 +157,10 @@ class StructuralValidator:
                 f"{prefix} (variable '{item.get('name', '?')}'): "
                 "missing 'comment' field — variable definitions should include a comment"
             )
-        var_type = item.get("variableType")
+        var_type = item.get("type")
         if var_type and var_type not in VALID_VARIABLE_TYPES:
             result.add_error(
-                f"{prefix} (variable): invalid variableType '{var_type}'. "
+                f"{prefix} (variable): invalid type '{var_type}'. "
                 f"Must be one of: {sorted(VALID_VARIABLE_TYPES)}"
             )
 
