@@ -1,0 +1,3 @@
+{"is-c3-clipboard-data": true, "type": "events", "items": [
+    {"type": "variable", "name": "Score", "variableType": "number", "initialValue": "0"}
+]}

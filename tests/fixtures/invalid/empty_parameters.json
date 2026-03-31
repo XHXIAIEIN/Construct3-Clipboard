@@ -1,0 +1,3 @@
+{"is-c3-clipboard-data": true, "type": "events", "items": [
+    {"type": "block", "conditions": [{"id": "every-tick", "objectClass": "System", "parameters": {}}], "actions": [{"id": "destroy", "objectClass": "Enemy", "parameters": {}}]}
+]}
