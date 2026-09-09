@@ -53,7 +53,7 @@ class TestBasicStructure:
     def test_all_valid_clipboard_types_accepted(self, validator):
         valid_types = [
             "events", "conditions", "actions", "object-types",
-            "world-instances", "layouts", "event-sheets"
+            "world-instances", "layouts", "event-sheets", "timelines"
         ]
         for t in valid_types:
             data = {"is-c3-clipboard-data": True, "type": t, "items": []}
@@ -472,3 +472,129 @@ class TestImageDataValidation:
         result = validator.validate(data)
         assert result.passed is False
         assert any("png" in e.lower() or "imagedata" in e.lower() for e in result.errors)
+
+
+# ---------------------------------------------------------------------------
+# TestEditorFormatFields — fields seen in real editor output
+# ---------------------------------------------------------------------------
+
+def _events(*items):
+    return {"is-c3-clipboard-data": True, "type": "events", "items": list(items)}
+
+
+class TestEditorFormatFields:
+    def test_include_validates(self, validator):
+        result = validator.validate(_events({"eventType": "include", "includeSheet": "SoundEvents"}))
+        assert result.passed is True
+
+    def test_include_missing_sheet_fails(self, validator):
+        result = validator.validate(_events({"eventType": "include"}))
+        assert result.passed is False
+        assert any("includeSheet" in e for e in result.errors)
+
+    def test_custom_ace_block_validates(self, validator):
+        block = {
+            "aceType": "action", "aceName": "Act", "objectClass": "EnemyMelee",
+            "functionDescription": "", "functionCategory": "", "functionReturnType": "none",
+            "functionCopyPicked": False, "functionIsAsync": False, "functionParameters": [],
+            "eventType": "custom-ace-block", "conditions": [], "actions": [],
+            "children": [{"eventType": "block", "conditions": [], "actions": []}],
+        }
+        result = validator.validate(_events(block))
+        assert result.passed is True, result.errors
+
+    def test_custom_ace_block_missing_fields_fails(self, validator):
+        result = validator.validate(_events({"eventType": "custom-ace-block", "aceType": "action"}))
+        assert result.passed is False
+        assert any("aceName" in e for e in result.errors)
+        assert any("objectClass" in e for e in result.errors)
+
+    def test_is_or_block_must_be_bool(self, validator):
+        block = {"eventType": "block", "isOrBlock": "true", "conditions": [], "actions": []}
+        result = validator.validate(_events(block))
+        assert result.passed is False
+        assert any("isOrBlock" in e for e in result.errors)
+
+    def test_is_inverted_must_be_bool(self, validator):
+        block = {
+            "eventType": "block",
+            "conditions": [{"id": "is-visible", "objectClass": "Player", "isInverted": 1}],
+            "actions": [],
+        }
+        result = validator.validate(_events(block))
+        assert result.passed is False
+        assert any("isInverted" in e for e in result.errors)
+
+    def test_bool_flags_accepted(self, validator):
+        block = {
+            "eventType": "block", "isOrBlock": True,
+            "conditions": [{"id": "is-visible", "objectClass": "Player", "isInverted": True}],
+            "actions": [],
+        }
+        var = {"eventType": "variable", "name": "N", "type": "number", "initialValue": "0",
+               "comment": "", "isStatic": True, "isConstant": False}
+        result = validator.validate(_events(var, block))
+        assert result.passed is True, result.errors
+
+    def test_variable_flags_must_be_bool(self, validator):
+        var = {"eventType": "variable", "name": "N", "type": "number", "initialValue": "0",
+               "comment": "", "isStatic": "yes", "isConstant": 0}
+        result = validator.validate(_events(var))
+        assert result.passed is False
+        assert any("isStatic" in e for e in result.errors)
+        assert any("isConstant" in e for e in result.errors)
+
+    def test_action_comment_validates(self, validator):
+        block = {
+            "eventType": "block", "conditions": [],
+            "actions": [{"type": "comment", "text": "Reset."}, {"callFunction": "reset"}],
+        }
+        result = validator.validate(_events(block))
+        assert result.passed is True, result.errors
+
+    def test_action_comment_without_text_fails(self, validator):
+        block = {"eventType": "block", "conditions": [], "actions": [{"type": "comment"}]}
+        result = validator.validate(_events(block))
+        assert result.passed is False
+        assert any("comment" in e for e in result.errors)
+
+    def test_children_are_validated(self, validator):
+        block = {
+            "eventType": "block", "conditions": [], "actions": [],
+            "children": [{"eventType": "block", "conditions": []}],
+        }
+        result = validator.validate(_events(block))
+        assert result.passed is False
+        assert any("children[0]" in e and "actions" in e for e in result.errors)
+
+    def test_group_children_are_validated(self, validator):
+        group = {"eventType": "group", "title": "G", "children": [{"eventType": "nope"}]}
+        result = validator.validate(_events(group))
+        assert result.passed is False
+
+
+# ---------------------------------------------------------------------------
+# TestTimelineValidation
+# ---------------------------------------------------------------------------
+
+class TestTimelineValidation:
+    def test_minimal_timeline_passes(self, validator):
+        data = {
+            "is-c3-clipboard-data": True, "type": "timelines",
+            "items": [{"name": "Timeline 1", "tracks": []}], "folders": [],
+        }
+        result = validator.validate(data)
+        assert result.passed is True, result.errors
+
+    def test_timeline_missing_name_fails(self, validator):
+        data = {"is-c3-clipboard-data": True, "type": "timelines", "items": [{"tracks": []}]}
+        result = validator.validate(data)
+        assert result.passed is False
+        assert any("name" in e for e in result.errors)
+
+    def test_timeline_tracks_must_be_array(self, validator):
+        data = {"is-c3-clipboard-data": True, "type": "timelines",
+                "items": [{"name": "T", "tracks": {}}]}
+        result = validator.validate(data)
+        assert result.passed is False
+        assert any("tracks" in e for e in result.errors)

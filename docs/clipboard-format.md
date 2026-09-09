@@ -535,8 +535,7 @@ See [layout-templates.md](layout-templates.md) for complete layout templates.
 ## Timelines
 
 Animation timeline with tracks + keyframes. Paste to Project Bar → Timelines.
-
-> ⚠ Not yet covered by validator: `src/validator/structural.py::VALID_CLIPBOARD_TYPES` is missing `"timelines"`.
+The validator checks only that each item has a `name` and a `tracks` array.
 
 ### Top-level
 ```json

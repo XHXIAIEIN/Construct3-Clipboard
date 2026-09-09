@@ -20,9 +20,13 @@ VALID_CLIPBOARD_TYPES = {
     "world-instances",
     "layouts",
     "event-sheets",
+    "timelines",
 }
 
-VALID_EVENT_TYPES = {"comment", "variable", "group", "block", "function-block"}
+VALID_EVENT_TYPES = {
+    "comment", "variable", "group", "block", "function-block",
+    "include", "custom-ace-block",
+}
 VALID_VARIABLE_TYPES = {"number", "string", "boolean"}
 VALID_FUNCTION_RETURN_TYPES = {"none", "number", "string", "any"}
 VALID_SCRIPT_LANGUAGES = {"javascript", "typescript"}
@@ -113,6 +117,8 @@ class StructuralValidator:
                 self._validate_object_type(item, prefix, result)
             elif clip_type == "layouts":
                 self._validate_layout(item, prefix, result)
+            elif clip_type == "timelines":
+                self._validate_timeline(item, prefix, result)
             # world-instances / event-sheets: basic existence checks only for now
 
     # ------------------------------------------------------------------
@@ -143,9 +149,35 @@ class StructuralValidator:
             self._validate_block(item, prefix, result)
         elif event_type == "function-block":
             self._validate_function_block(item, prefix, result)
+        elif event_type == "custom-ace-block":
+            self._validate_custom_ace_block(item, prefix, result)
         elif event_type == "group":
             self._validate_group(item, prefix, result)
+        elif event_type == "include":
+            self._validate_include(item, prefix, result)
         # comment: no further required fields
+
+        self._validate_children(item, prefix, result)
+
+    def _validate_children(
+        self, item: dict, prefix: str, result: ValidationResult
+    ) -> None:
+        children = item.get("children")
+        if children is None:
+            return
+        if not isinstance(children, list):
+            result.add_error(f"{prefix}: 'children' must be an array")
+            return
+        for idx, child in enumerate(children):
+            self._validate_event_item(child, f"{prefix}.children[{idx}]", result)
+
+    def _check_bool(
+        self, item: dict, key: str, prefix: str, result: ValidationResult
+    ) -> None:
+        if key in item and not isinstance(item[key], bool):
+            result.add_error(
+                f"{prefix}: '{key}' must be a boolean, got {type(item[key]).__name__}"
+            )
 
     def _validate_variable(
         self, item: dict, prefix: str, result: ValidationResult
@@ -163,31 +195,30 @@ class StructuralValidator:
                 f"{prefix} (variable): invalid type '{var_type}'. "
                 f"Must be one of: {sorted(VALID_VARIABLE_TYPES)}"
             )
+        self._check_bool(item, "isStatic", f"{prefix} (variable)", result)
+        self._check_bool(item, "isConstant", f"{prefix} (variable)", result)
+
+    def _validate_conditions_actions(
+        self, item: dict, prefix: str, label: str, result: ValidationResult, *, required: bool
+    ) -> None:
+        for key in ("conditions", "actions"):
+            if key not in item:
+                if required:
+                    result.add_error(f"{prefix} ({label}): missing required field '{key}'")
+                continue
+            entries = item[key]
+            if not isinstance(entries, list):
+                result.add_error(f"{prefix} ({label}): '{key}' must be an array")
+                continue
+            singular = key[:-1]
+            for idx, entry in enumerate(entries):
+                self._validate_ace_entry(entry, f"{prefix} {singular}[{idx}]", result)
 
     def _validate_block(
         self, item: dict, prefix: str, result: ValidationResult
     ) -> None:
-        # conditions
-        if "conditions" not in item:
-            result.add_error(f"{prefix} (block): missing required field 'conditions'")
-        else:
-            conditions = item["conditions"]
-            if not isinstance(conditions, list):
-                result.add_error(f"{prefix} (block): 'conditions' must be an array")
-            else:
-                for ci, cond in enumerate(conditions):
-                    self._validate_ace_entry(cond, f"{prefix} condition[{ci}]", result)
-
-        # actions
-        if "actions" not in item:
-            result.add_error(f"{prefix} (block): missing required field 'actions'")
-        else:
-            actions = item["actions"]
-            if not isinstance(actions, list):
-                result.add_error(f"{prefix} (block): 'actions' must be an array")
-            else:
-                for ai, act in enumerate(actions):
-                    self._validate_ace_entry(act, f"{prefix} action[{ai}]", result)
+        self._check_bool(item, "isOrBlock", f"{prefix} (block)", result)
+        self._validate_conditions_actions(item, prefix, "block", result, required=True)
 
     def _validate_function_block(
         self, item: dict, prefix: str, result: ValidationResult
@@ -196,14 +227,29 @@ class StructuralValidator:
             result.add_error(
                 f"{prefix} (function-block): missing required field 'functionName'"
             )
+        self._validate_function_return_type(item, f"{prefix} (function-block)", result)
+        self._validate_conditions_actions(item, prefix, "function-block", result, required=False)
+
+    def _validate_custom_ace_block(
+        self, item: dict, prefix: str, result: ValidationResult
+    ) -> None:
+        label = f"{prefix} (custom-ace-block)"
+        for key in ("aceType", "aceName", "objectClass"):
+            if not item.get(key):
+                result.add_error(f"{label}: missing required field '{key}'")
+        if "functionReturnType" in item:
+            self._validate_function_return_type(item, label, result)
+        self._validate_conditions_actions(item, prefix, "custom-ace-block", result, required=False)
+
+    def _validate_function_return_type(
+        self, item: dict, label: str, result: ValidationResult
+    ) -> None:
         return_type = item.get("functionReturnType")
         if return_type is None:
-            result.add_error(
-                f"{prefix} (function-block): missing required field 'functionReturnType'"
-            )
+            result.add_error(f"{label}: missing required field 'functionReturnType'")
         elif return_type not in VALID_FUNCTION_RETURN_TYPES:
             result.add_error(
-                f"{prefix} (function-block): invalid functionReturnType '{return_type}'. "
+                f"{label}: invalid functionReturnType '{return_type}'. "
                 f"Must be one of: {sorted(VALID_FUNCTION_RETURN_TYPES)}"
             )
 
@@ -213,6 +259,12 @@ class StructuralValidator:
         # groups should have a title, but treat it as advisory
         if "title" not in item:
             result.add_warning(f"{prefix} (group): missing 'title' field")
+
+    def _validate_include(
+        self, item: dict, prefix: str, result: ValidationResult
+    ) -> None:
+        if not item.get("includeSheet"):
+            result.add_error(f"{prefix} (include): missing required field 'includeSheet'")
 
     # ------------------------------------------------------------------
     # ACE entry (condition / action) validation
@@ -225,10 +277,18 @@ class StructuralValidator:
             result.add_error(f"{prefix}: must be an object")
             return
 
+        # Comment inside an actions array: {"type": "comment", "text": "..."}
+        if entry.get("type") == "comment":
+            if not isinstance(entry.get("text"), str):
+                result.add_error(f"{prefix}: comment must have a string 'text' field")
+            return
+
         # Check for script action pattern
         if "script" in entry or "language" in entry:
             self._validate_script_ace(entry, prefix, result)
             return
+
+        self._check_bool(entry, "isInverted", prefix, result)
 
         # Check parameters
         params = entry.get("parameters")
@@ -339,3 +399,22 @@ class StructuralValidator:
             layers = item["layers"]
             if not isinstance(layers, list):
                 result.add_error(f"{prefix}: 'layers' must be an array")
+
+    # ------------------------------------------------------------------
+    # Timeline validation
+    # ------------------------------------------------------------------
+
+    def _validate_timeline(
+        self, item: Any, prefix: str, result: ValidationResult
+    ) -> None:
+        if not isinstance(item, dict):
+            result.add_error(f"{prefix}: timeline item must be an object")
+            return
+
+        if not item.get("name"):
+            result.add_error(f"{prefix}: timeline missing required field 'name'")
+
+        if "tracks" not in item:
+            result.add_error(f"{prefix}: timeline missing required field 'tracks'")
+        elif not isinstance(item["tracks"], list):
+            result.add_error(f"{prefix}: 'tracks' must be an array")
