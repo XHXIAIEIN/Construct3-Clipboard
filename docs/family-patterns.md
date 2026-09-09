@@ -40,14 +40,14 @@ Group all enemy types into one family to handle collision and damage uniformly.
    "conditions": [{"id": "on-collision-with-another-object", "objectClass": "Bullet", "parameters": {"object": "Enemies"}}],
    "actions": [
      {"id": "subtract-from-instvar", "objectClass": "Enemies", "parameters": {"instance-variable": "Health", "value": "10"}},
-     {"id": "destroy", "objectClass": "Bullet", "parameters": {}}
+     {"id": "destroy", "objectClass": "Bullet"}
    ]},
 
   {"eventType": "block",
-   "conditions": [{"id": "compare-instvar", "objectClass": "Enemies", "parameters": {"instance-variable": "Health", "comparison": 3, "value": "0"}}],
+   "conditions": [{"id": "compare-instance-variable", "objectClass": "Enemies", "parameters": {"instance-variable": "Health", "comparison": 3, "value": "0"}}],
    "actions": [
      {"id": "spawn-another-object", "objectClass": "Enemies", "parameters": {"object": "ExplosionParticles", "layer": "0", "image-point": "0"}},
-     {"id": "destroy", "objectClass": "Enemies", "parameters": {}}
+     {"id": "destroy", "objectClass": "Enemies"}
    ]},
 
   {"eventType": "block",
@@ -77,7 +77,7 @@ Group all pickup items that the player can collect.
      "actions": [
        {"id": "add-to-eventvar", "objectClass": "System", "parameters": {"variable": "Score", "value": "Collectibles.PointValue"}},
        {"id": "play", "objectClass": "Audio", "parameters": {"audio-file": "pickup", "loop": "not-looping", "volume": "0", "tag-optional": "\"\""}},
-       {"id": "destroy", "objectClass": "Collectibles", "parameters": {}}
+       {"id": "destroy", "objectClass": "Collectibles"}
      ]},
 
     {"eventType": "comment", "text": "Special handling for specific collectible types"},
@@ -117,7 +117,7 @@ Group all objects that act as solid obstacles.
   {"eventType": "block",
    "conditions": [{"id": "on-collision-with-another-object", "objectClass": "Bullet", "parameters": {"object": "Obstacles"}}],
    "actions": [
-     {"id": "destroy", "objectClass": "Bullet", "parameters": {}}
+     {"id": "destroy", "objectClass": "Bullet"}
    ]},
 
   {"eventType": "comment", "text": "Destructible obstacles (Crate only)"},
@@ -130,10 +130,10 @@ Group all objects that act as solid obstacles.
    ]},
 
   {"eventType": "block",
-   "conditions": [{"id": "compare-instvar", "objectClass": "Crate", "parameters": {"instance-variable": "Health", "comparison": 3, "value": "0"}}],
+   "conditions": [{"id": "compare-instance-variable", "objectClass": "Crate", "parameters": {"instance-variable": "Health", "comparison": 3, "value": "0"}}],
    "actions": [
      {"id": "spawn-another-object", "objectClass": "Crate", "parameters": {"object": "WoodParticles", "layer": "0", "image-point": "0"}},
-     {"id": "destroy", "objectClass": "Crate", "parameters": {}}
+     {"id": "destroy", "objectClass": "Crate"}
    ]}
 ]}
 ```
@@ -152,13 +152,13 @@ Group UI elements for batch visibility control.
   {"eventType": "group", "disabled": false, "title": "UI Visibility Control", "description": "Show/hide UI based on game state", "isActiveOnStart": true, "children": [
     {"eventType": "comment", "text": "Hide all game UI when paused"},
     {"eventType": "block",
-     "conditions": [{"id": "compare-boolean-eventvar", "objectClass": "System", "parameters": {"variable": "IsPaused", "comparison": 0, "value": "true"}}],
+     "conditions": [{"id": "compare-boolean-eventvar", "objectClass": "System", "parameters": {"variable": "IsPaused"}}],
      "actions": [
        {"id": "set-visible", "objectClass": "GameUI", "parameters": {"visibility": 0}}
      ]},
 
     {"eventType": "block",
-     "conditions": [{"id": "compare-boolean-eventvar", "objectClass": "System", "parameters": {"variable": "IsPaused", "comparison": 0, "value": "false"}}],
+     "conditions": [{"id": "compare-boolean-eventvar", "objectClass": "System", "parameters": {"variable": "IsPaused"}, "isInverted": true}],
      "actions": [
        {"id": "set-visible", "objectClass": "GameUI", "parameters": {"visibility": 1}}
      ]},
@@ -167,7 +167,7 @@ Group UI elements for batch visibility control.
     {"eventType": "block",
      "conditions": [{"id": "compare-eventvar", "objectClass": "System", "parameters": {"variable": "GameState", "comparison": 0, "value": "2"}}],
      "actions": [
-       {"id": "tween-one-property", "objectClass": "GameUI", "behaviorType": "Tween", "parameters": {"tags": "\"fade\"", "property": "opacity", "end-value": "0", "time": "1", "ease": "out-sine", "destroy-on-complete": "no", "loop": "no", "ping-pong": "no", "repeat-count": "1"}}
+       {"id": "tween-one-property", "objectClass": "GameUI", "behaviorType": "Tween", "parameters": {"tags": "\"fade\"", "property": "offsetOpacity", "end-value": "0", "time": "1", "ease": "out-sine", "destroy-on-complete": "no", "loop": "no", "ping-pong": "no", "repeat-count": "1"}}
      ]}
   ]}
 ]}
@@ -246,7 +246,7 @@ When referencing families in clipboard JSON, use the family name as `objectClass
     {"id": "on-collision-with-another-object", "objectClass": "Player", "parameters": {"object": "Enemies"}}
   ],
   "actions": [
-    {"id": "destroy", "objectClass": "Enemies", "parameters": {}}
+    {"id": "destroy", "objectClass": "Enemies"}
   ]
 }
 ```

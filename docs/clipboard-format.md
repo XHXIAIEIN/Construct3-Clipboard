@@ -32,25 +32,77 @@ await navigator.clipboard.write([new ClipboardItem({'text/plain': blob})]);
 
 ## Event Types
 
-```json
-// Variable (comment required!)
-{"eventType": "variable", "name": "Score", "type": "number", "initialValue": "0", "comment": ""}
+Field names and order below match editor output (see [samples](samples/README.md)).
 
-// Comment
+```json
+// Variable. The editor always writes comment, isStatic and isConstant;
+// the validator requires name and warns when comment is missing.
+{"eventType": "variable", "name": "Score", "type": "number", "initialValue": "0", "comment": "", "isStatic": false, "isConstant": false}
+
+// Comment (text may contain \n)
 {"eventType": "comment", "text": "Comment text"}
 
+// Include another event sheet
+{"eventType": "include", "includeSheet": "SoundEvents"}
+
 // Group
-{"eventType": "group", "disabled": false, "title": "Title", "children": []}
+{"eventType": "group", "disabled": false, "title": "Title", "description": "", "isActiveOnStart": true, "children": []}
 
 // Event Block
 {"eventType": "block", "conditions": [...], "actions": [...]}
+
+// OR block: conditions are combined with OR instead of AND
+{"eventType": "block", "isOrBlock": true, "conditions": [...], "actions": [...]}
 
 // With sub-events
 {"eventType": "block", "conditions": [...], "actions": [...], "children": [...]}
 
 // Function
-{"eventType": "function-block", "functionName": "MyFunc", "functionReturnType": "none", "functionParameters": [], "conditions": [], "actions": [...]}
+{"functionName": "MyFunc", "functionDescription": "", "functionCategory": "", "functionReturnType": "none", "functionCopyPicked": false, "functionIsAsync": false, "functionParameters": [], "eventType": "function-block", "conditions": [], "actions": [...]}
+
+// Custom action or condition defined on an object type
+{"aceType": "action", "aceName": "Act", "objectClass": "EnemyMelee", "functionDescription": "", "functionCategory": "", "functionReturnType": "none", "functionCopyPicked": false, "functionIsAsync": false, "functionParameters": [], "eventType": "custom-ace-block", "conditions": [], "actions": [...], "children": [...]}
 ```
+
+`functionParameters` entries use the variable shape: `{"name": "scale", "type": "number", "initialValue": "0", "comment": ""}`.
+
+---
+
+## Conditions and Actions
+
+An entry in `conditions` or `actions` is one of the following shapes.
+
+```json
+// ACE on an object type or plugin
+{"id": "on-collision-with-another-object", "objectClass": "Player", "parameters": {"object": "Enemy"}}
+
+// ACE on a behavior: behaviorType is the behavior's name on that object
+{"id": "simulate-control", "objectClass": "Player", "behaviorType": "Platform", "parameters": {"control": "jump"}}
+
+// Inverted condition
+{"id": "is-overlapping-another-object", "objectClass": "Player", "parameters": {"object": "Wall"}, "isInverted": true}
+
+// No parameters: omit the field entirely
+{"id": "destroy", "objectClass": "Bullet"}
+
+// Comment inside an actions array (note: type, not eventType)
+{"type": "comment", "text": "Reset the score."}
+
+// Call a function defined by a function-block: positional array, omitted when empty
+{"callFunction": "playBGM", "parameters": ["\"IceVillage\"", false, "0"]}
+{"callFunction": "stopBGM"}
+
+// Call a custom action defined by a custom-ace-block
+{"customAction": "Pushback", "objectClass": "Player", "parameters": ["HurtArea.X", "HurtArea.Y"]}
+{"customAction": "Attack", "objectClass": "EnemyMelee"}
+
+// Script action: see Script Actions below
+{"type": "script", "language": "javascript", "script": ["..."]}
+```
+
+`parameters` keys are the parameter ids from the ACE schema. Values are usually expression
+strings, integers for comparison operators and key codes, or JSON booleans. Some parameters are
+objects: the `file` parameter of AJAX `request-project-file` is `{"path": "Data/BodiesData.json"}`.
 
 ---
 
@@ -119,7 +171,7 @@ Replace `{placeholder}` with actual values.
 
 **Collision**
 ```json
-{"eventType":"block","conditions":[{"id":"on-collision-with-another-object","objectClass":"{Object1}","parameters":{"object":"{Object2}"}}],"actions":[{"id":"destroy","objectClass":"{Object2}","parameters":{}}]}
+{"eventType":"block","conditions":[{"id":"on-collision-with-another-object","objectClass":"{Object1}","parameters":{"object":"{Object2}"}}],"actions":[{"id":"destroy","objectClass":"{Object2}"}]}
 ```
 
 **Every X Seconds**
@@ -129,13 +181,13 @@ Replace `{placeholder}` with actual values.
 
 **On Layout Start**
 ```json
-{"eventType":"block","conditions":[{"id":"on-start-of-layout","objectClass":"System","parameters":{}}],"actions":[...]}
+{"eventType":"block","conditions":[{"id":"on-start-of-layout","objectClass":"System"}],"actions":[...]}
 ```
 
 **On Created / Destroyed**
 ```json
-{"eventType":"block","conditions":[{"id":"on-created","objectClass":"{Object}","parameters":{}}],"actions":[...]}
-{"eventType":"block","conditions":[{"id":"on-destroyed","objectClass":"{Object}","parameters":{}}],"actions":[...]}
+{"eventType":"block","conditions":[{"id":"on-created","objectClass":"{Object}"}],"actions":[...]}
+{"eventType":"block","conditions":[{"id":"on-destroyed","objectClass":"{Object}"}],"actions":[...]}
 ```
 
 ### Variables
@@ -164,7 +216,7 @@ Replace `{placeholder}` with actual values.
 **If/Else**
 ```json
 {"eventType":"block","conditions":[{"id":"compare-eventvar","objectClass":"System","parameters":{"variable":"{VarName}","comparison":4,"value":"0"}}],"actions":[...]},
-{"eventType":"block","conditions":[{"id":"else","objectClass":"System","parameters":{}}],"actions":[...]}
+{"eventType":"block","conditions":[{"id":"else","objectClass":"System"}],"actions":[...]}
 ```
 
 **Loops**
@@ -246,7 +298,7 @@ Inline JavaScript/TypeScript code blocks within event sheets.
 ### Animation
 
 **Tween Property**
-property: x, y, width, height, angle, opacity, z-elevation
+property (combo ids from the Tween schema): offsetX, offsetY, offsetZElevation, size, offsetWidth, offsetHeight, offsetDepth, offsetAngle, offsetOpacity, offsetColor, offsetScaleX, offsetScaleY, offsetScaleZ
 ease: linear, in-sine, out-sine, in-out-sine, in-back, out-back, in-elastic, out-elastic, in-bounce, out-bounce
 ```json
 {"id":"tween-one-property","objectClass":"{Object}","behaviorType":"Tween","parameters":{"tags":"\"{tag}\"","property":"{property}","end-value":"{value}","time":"{seconds}","ease":"in-out-sine","destroy-on-complete":"no","loop":"no","ping-pong":"no","repeat-count":"1"}}
@@ -327,11 +379,13 @@ Paste instances directly to Layout view with positions.
     "width": 32, "height": 32,
     "originX": 0.5, "originY": 0.5,
     "color": [1,1,1,1],
-    "angle": 0,
-    "zElevation": 0
+    "z": 0,
+    "angle": 0
   }
 }
 ```
+
+`z` is the instance's Z elevation. The layer-level field is spelled `zElevation` (see Layouts below).
 
 ### Sprite Instance Properties
 ```json
@@ -591,9 +645,15 @@ Animation timeline with tracks + keyframes. Paste to Project Bar → Timelines.
 navigator.clipboard.readText().then(t => console.log(JSON.stringify(JSON.parse(t), null, 2)))
 ```
 
-### Query Schema
-```bash
-# Schemas live in the Construct3-RAG sibling repo; use schema.py to query
-python3 scripts/query/schema.py plugin sprite set-animation
-python3 scripts/query/schema.py behavior eightdir simulate-control
+### Look Up an ACE
+ACE ids and parameter ids come from [Construct3-RAG](https://github.com/XHXIAIEIN/Construct3-RAG),
+cloned alongside this repository:
+
 ```
+../Construct3-RAG/data/c3-schemas/en-US/plugins/{plugin-id}.json
+../Construct3-RAG/data/c3-schemas/en-US/behaviors/{behavior-id}.json
+```
+
+Ids are lowercase (`sprite`, `system`, `eightdir`). Each file has `conditions` and `actions`
+arrays; find the entry by `id`, and its `params` object is keyed by the parameter ids used in
+`parameters` here. ACEs shared by every world object are in `plugins/_common.json`.

@@ -10,25 +10,22 @@
 | **Tilemap** | Tile-based level design | Platformer terrain, RPG maps |
 | **Text** | Display text | Score, Title, Instructions |
 
-## Generate Custom imageData
+## Generate Placeholder imageData
 
-Use the script to generate any color/size/shape:
+`scripts/imagedata.py` prints a PNG data URI for a solid rectangle or circle:
 
 ```bash
-# Rectangle
-python3 scripts/generate_imagedata.py --color red --width 32 --height 32
+# Rectangle (default shape)
+python scripts/imagedata.py --color red --width 32 --height 32
 
 # Circle
-python3 scripts/generate_imagedata.py --color blue --width 16 --height 16 --shape circle
-
-# Rounded rectangle
-python3 scripts/generate_imagedata.py --color green --width 64 --height 16 --shape rounded
-
-# From existing image
-python3 scripts/generate_imagedata.py --file sprite.png
+python scripts/imagedata.py --color blue --width 16 --height 16 --shape circle
 ```
 
-**Available colors**: red, green, blue, yellow, cyan, magenta, white, black, gray, orange, purple, brown, pink, or `#RRGGBB`
+**Colors**: red, green, blue, yellow, cyan, magenta, white, black, gray, orange, purple, brown,
+pink, lime, navy, teal, gold, silver, transparent, or `#RRGGBB` / `#RRGGBBAA`.
+**Shapes**: `rectangle`, `circle`. Converting an existing image file is not supported; paste
+real artwork in the editor after creating the object.
 
 ## Folder Structure (recursive)
 
@@ -52,11 +49,11 @@ Each folder has exactly these 3 fields: `name` / `items` / `subfolders`. Top-lev
 
 | Need | Color | Size | Shape |
 |------|-------|------|-------|
-| Player | blue | 32x32 | rect |
-| Enemy | red | 32x32 | rect |
+| Player | blue | 32x32 | rectangle |
+| Enemy | red | 32x32 | rectangle |
 | Ball | yellow | 16x16 | circle |
-| Paddle | green | 64x16 | rounded |
-| Wall/Ground | gray | 32x32 | rect |
+| Paddle | green | 64x16 | rectangle |
+| Wall/Ground | gray | 32x32 | rectangle |
 | Bullet | orange | 8x8 | circle |
 | Coin | yellow | 24x24 | circle |
 
@@ -83,10 +80,10 @@ Generate imageData first, then use this structure:
 For large repeating textures (ground, walls, water). Tiles seamlessly.
 
 ```json
-{"is-c3-clipboard-data":true,"type":"object-types","families":[],"items":[{"name":"{NAME}","plugin-id":"TiledBg","isGlobal":false,"instanceVariables":[],"behaviorTypes":[],"effectTypes":[],"image":{"width":{WIDTH},"height":{HEIGHT},"originX":0.5,"originY":0.5,"originalSource":"","exportFormat":"lossless","exportQuality":0.8,"fileType":"image/png","imageDataIndex":0,"useCollisionPoly":true}}],"folders":[],"imageData":["{IMAGEDATA}"]}
+{"is-c3-clipboard-data":true,"type":"object-types","families":[],"items":[{"name":"{NAME}","plugin-id":"TiledBg","isGlobal":false,"editorNewInstanceIsReplica":true,"instanceVariables":[],"behaviorTypes":[],"effectTypes":[],"image":{"width":{WIDTH},"height":{HEIGHT},"originX":0.5,"originY":0.5,"originalSource":"","exportFormat":"lossless","exportQuality":0.8,"fileType":"image/png","imageDataIndex":0,"useCollisionPoly":true,"tag":""}}],"folders":[],"imageData":["{IMAGEDATA}"]}
 ```
 
-**Note**: Use `--pattern brick` or `--pattern checkerboard` to generate tileable textures. Add Solid behavior if needed.
+**Note**: `scripts/imagedata.py` only makes solid fills; draw a tileable texture in the editor afterwards. Add Solid behavior if needed.
 
 ---
 
@@ -145,7 +142,7 @@ For tile-based levels. Uses a tileset image containing multiple tiles.
 
 **Text**
 ```json
-{"is-c3-clipboard-data":true,"type":"object-types","families":[],"items":[{"name":"Text","plugin-id":"Text","isGlobal":false,"instanceVariables":[],"behaviorTypes":[],"effectTypes":[]}],"folders":[]}
+{"is-c3-clipboard-data":true,"type":"object-types","families":[],"items":[{"name":"Text","plugin-id":"Text","isGlobal":false,"editorNewInstanceIsReplica":true,"instanceVariables":[],"behaviorTypes":[],"effectTypes":[]}],"folders":[]}
 ```
 
 **Array**
