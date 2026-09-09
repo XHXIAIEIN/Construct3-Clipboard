@@ -40,16 +40,31 @@ class TestGenerate:
                 "type": "event_sheet",
                 "variables": [
                     {
-                        "name": "score",
-                        "variable_type": "number",
-                        "initial_value": "0",
+                        "name": "Score",
+                        "type": "number",
+                        "initialValue": "0",
                         "comment": "Player score",
                     }
                 ],
                 "events": [
                     {
-                        "conditions": [{"id": "always", "object": "System"}],
-                        "actions": [{"id": "set-value", "object": "Player", "params": ["1"]}],
+                        "conditions": [
+                            {"id": "on-start-of-layout", "objectClass": "System"},
+                            {
+                                "id": "is-timer-running",
+                                "objectClass": "Player",
+                                "behaviorType": "Timer",
+                                "parameters": {"tag": "\"spawn\""},
+                                "isInverted": True,
+                            },
+                        ],
+                        "actions": [
+                            {
+                                "id": "set-eventvar-value",
+                                "objectClass": "System",
+                                "parameters": {"variable": "Score", "value": "0"},
+                            }
+                        ],
                     }
                 ],
             }
@@ -57,8 +72,12 @@ class TestGenerate:
         resp = client.post("/generate", json=payload)
         assert resp.status_code == 200
         data = resp.json()
-        # renderer will return success or a known error — just check it responded cleanly
-        assert "success" in data
+        assert data["success"] is True, data
+        assert data["validation"]["passed"] is True
+        items = data["clipboard_json"]["items"]
+        assert items[0]["eventType"] == "variable"
+        assert items[1]["conditions"][1]["isInverted"] is True
+        assert items[1]["conditions"][1]["behaviorType"] == "Timer"
 
     def test_generate_object_types(self):
         payload = {
@@ -90,43 +109,3 @@ class TestGenerate:
         data = resp.json()
         assert data["success"] is False
         assert data["error"] is not None
-
-
-class TestFormatSpec:
-    def test_format_spec(self):
-        resp = client.get("/format-spec")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "valid_types" in data
-        assert "events" in data["valid_types"]
-        assert "event_types" in data
-        assert "variable_types" in data
-        assert "comparison_operators" in data
-        assert "parameter_rules" in data
-
-
-class TestErrors:
-    def test_report_error(self):
-        payload = {
-            "source": "test_suite",
-            "error_message": "Something broke",
-            "error_type": "test_error",
-        }
-        resp = client.post("/errors/report", json=payload)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "id" in data
-        assert data["id"].startswith("ERR-")
-
-    def test_pending(self):
-        resp = client.get("/errors/pending")
-        assert resp.status_code == 200
-        assert isinstance(resp.json(), list)
-
-    def test_stats(self):
-        resp = client.get("/errors/stats")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "total" in data
-        assert "by_type" in data
-        assert "by_status" in data

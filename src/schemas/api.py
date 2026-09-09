@@ -7,7 +7,6 @@ from src.schemas.intent_ir import IntentIR
 
 class GenerateRequest(BaseModel):
     intent_ir: IntentIR
-    ace_context: dict[str, Any] | None = None
     options: dict[str, Any] | None = None
 
 
@@ -39,11 +38,3 @@ class HealthResponse(BaseModel):
     status: str
     service: str = "Construct3-Clipboard"
     version: str = "0.1.0"
-
-
-class ErrorReportRequest(BaseModel):
-    source: str = "user_report"
-    input_ir: dict[str, Any] | None = None
-    bad_json: dict[str, Any] | None = None
-    error_message: str = ""
-    error_type: str = ""
