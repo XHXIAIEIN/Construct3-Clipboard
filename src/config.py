@@ -11,7 +11,7 @@ except ImportError:
 BASE_DIR = Path(__file__).parent.parent
 
 # Service
-HOST = os.getenv("CLIPBOARD_HOST", "0.0.0.0")
+HOST = os.getenv("CLIPBOARD_HOST", "127.0.0.1")
 PORT = int(os.getenv("CLIPBOARD_PORT", "8766"))
 
 # RAG dependency (for ACE validation)
