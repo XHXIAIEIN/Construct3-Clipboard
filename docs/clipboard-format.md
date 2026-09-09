@@ -16,6 +16,7 @@
 | `"world-instances"` | Object instances with position | Layout view |
 | `"layouts"` | Complete layout (layers + instances + objects) | Project Bar → Layouts |
 | `"event-sheets"` | Complete event sheet | Project Bar → Event sheets |
+| `"timelines"` | Timeline with tracks + keyframes | Project Bar → Timelines |
 
 ### Write to Clipboard (MUST use Blob)
 ```javascript
@@ -474,6 +475,103 @@ Complete layout with layers, instances, and object definitions. Paste to Project
 ```
 
 See [layout-templates.md](layout-templates.md) for complete layout templates.
+
+---
+
+## Timelines
+
+Animation timeline with tracks + keyframes. Paste to Project Bar → Timelines.
+
+> ⚠ Not yet covered by validator: `src/validator/structural.py::VALID_CLIPBOARD_TYPES` is missing `"timelines"`.
+
+### Top-level
+```json
+{
+  "is-c3-clipboard-data": true,
+  "type": "timelines",
+  "project": "{project-id}",
+  "items": [ /* timeline */ ],
+  "folders": []
+}
+```
+
+### Timeline Fields (27)
+```json
+{
+  "name": "Timeline 1",
+  "enabled": true,
+  "interpolationMode": "default",
+  "resultMode": "default",
+  "ease": "default",
+  "pathMode": "default",
+  "resizeMode": "default",
+  "playheadTime": 0,
+  "totalTime": 1.0,
+  "stepTime": 0.1,
+  "useStepTime": false,
+  "showingInterpolationModes": false,
+  "showingResultModes": false,
+  "showingEases": false,
+  "showingPathModes": false,
+  "scale": 1,
+  "loop": false,
+  "pingPong": false,
+  "repeatCount": 1,
+  "startOnLayout": false,
+  "transformWithSceneGraph": true,
+  "ignoreSystemTimescale": false,
+  "nestedData": null,
+  "childrenNestedData": null,
+  "transitionsData": null,
+  "tracks": [ /* track */ ],
+  "tracksRoot": { /* UI folder tree */ },
+  "nestedTimelinesRoot": { /* UI folder tree */ }
+}
+```
+
+### Track (`type:"instance-track"`)
+```json
+{
+  "type": "instance-track",
+  "worldInstance": 3,
+  "objectType": "{ObjectName}",
+  "project": "{project-id}",
+  "worldInstanceClipboardText": "<embedded world-instances clipboard JSON>",
+  "enabled": true,
+  "interpolationMode": "default",
+  "resultMode": "default",
+  "ease": "default",
+  "pathMode": "default",
+  "resizeMode": "default",
+  "initialVisibility": true,
+  "id": "{uuid}",
+  "virtualPosition": {...},
+  "keyframes": [ /* keyframe */ ],
+  "propertyTracks": [ /* propertyTrack */ ],
+  "propertyTracksRoot": { /* UI folder tree */ }
+}
+```
+
+**Key insight**: `worldInstanceClipboardText` is a **nested `type:"world-instances"` clipboard string** — C3 clipboards nest. Strip/parse it as its own clipboard payload if needed.
+
+### Keyframe
+```json
+{"time": 0, "tags": "", "enabled": true, "ease": "default", "pathMode": "default"}
+```
+
+### PropertyTrack
+```json
+{
+  "property": "x",
+  "source": "x",
+  "enabled": true,
+  "interpolationMode": "default",
+  "resultMode": "default",
+  "ease": "default",
+  "pathMode": "default",
+  "propertyKeyframes": [ /* ... */ ]
+}
+```
 
 ---
 

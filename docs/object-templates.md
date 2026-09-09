@@ -30,6 +30,24 @@ python3 scripts/generate_imagedata.py --file sprite.png
 
 **Available colors**: red, green, blue, yellow, cyan, magenta, white, black, gray, orange, purple, brown, pink, or `#RRGGBB`
 
+## Folder Structure (recursive)
+
+All templates below use `"folders":[]` (flat). For hierarchical organization, `folders` is **recursively nested**:
+
+```json
+"folders": [{
+  "name": "Scene",
+  "items": [ /* object-type at this level */ ],
+  "subfolders": [{
+    "name": "Enemies",
+    "items": [ /* ... */ ],
+    "subfolders": [ /* ...further nesting */ ]
+  }]
+}]
+```
+
+Each folder has exactly these 3 fields: `name` / `items` / `subfolders`. Top-level `items` array (sibling of `folders`) can stay empty when the entire tree lives under folders.
+
 ## Quick Reference
 
 | Need | Color | Size | Shape |
