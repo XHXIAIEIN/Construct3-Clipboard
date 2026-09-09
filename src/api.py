@@ -1,8 +1,11 @@
 """FastAPI application for Construct3-Clipboard service."""
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 from src.generator.renderer import render_ir
 from src.schemas.api import (
@@ -24,6 +27,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_PLAYGROUND = Path(__file__).resolve().parent.parent / "playground" / "index.html"
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def playground() -> HTMLResponse:
+    return HTMLResponse(_PLAYGROUND.read_text(encoding="utf-8"))
 
 
 @app.get("/health", response_model=HealthResponse)

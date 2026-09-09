@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Construct 3 Clipboard Playground</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#4d4e5190;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#6e6f7a}
+*{scrollbar-width:thin;scrollbar-color:#4d4e5190 transparent}
+
+:root{
+  --bg:#1e1f22;--second:#37393c;--fg:#d0d0d9;--secondFg:#96969d;
+  --selBg:#464b50;--selFg:#e0e0e9;--border:#3f3f3f;--dis:#666;
+  --accent:#5378c8;--shadow:#212121;--deepBg:#1e1f22;
+  --blue:#70b0ff;--red:#ff757f;--yellow:#ffbd76;
+  --green:#7af8ca;--gray:#7e8eda;--purple:#baacff;--orange:#ff9668;
+  --error:#dd3962;
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--fg);overflow:hidden;height:100vh}
+
+/* Toolbar */
+#toolbar{position:fixed;top:0;left:0;right:0;z-index:200;height:44px;background:var(--second);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px}
+.logo{color:var(--accent);font-weight:bold;font-size:13px;white-space:nowrap;letter-spacing:.3px}
+.logo span{color:var(--orange)}
+.sep{width:1px;height:22px;background:var(--border)}
+.tb-select{padding:5px 10px;background:var(--deepBg);border:1px solid var(--border);border-radius:4px;color:var(--fg);font:12px inherit;outline:none;cursor:pointer}
+.tb-select:focus{border-color:var(--accent)}
+.tb-btn{padding:5px 12px;background:transparent;color:var(--secondFg);border:1px solid var(--border);border-radius:4px;cursor:pointer;font:12px inherit;white-space:nowrap}
+.tb-btn:hover{background:var(--selBg);color:var(--fg)}
+.tb-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tb-btn.primary:hover{background:#6488d8}
+
+/* Canvas */
+#canvas{position:absolute;top:44px;left:0;right:0;bottom:0;overflow:hidden;cursor:grab;background-image:radial-gradient(circle,var(--second) 1px,transparent 1px);background-size:24px 24px}
+#canvas.grabbing{cursor:grabbing}
+#world{position:absolute;transform-origin:0 0}
+#zoom-info{position:fixed;bottom:8px;right:12px;color:var(--dis);font-size:10px;z-index:100;user-select:none}
+
+/* Card */
+.card{position:absolute;width:540px;height:700px;min-width:320px;min-height:160px;background:var(--second);border:1px solid var(--border);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.4);display:flex;flex-direction:column;resize:both;overflow:hidden;contain:layout}
+.card:hover{border-color:#505050}
+.card-header{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);cursor:move;gap:6px;background:var(--deepBg);border-radius:8px 8px 0 0;min-height:36px;user-select:none}
+.card-title{flex:1;font-size:12px;font-weight:bold;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.method-badge{font-size:10px;font-weight:bold;padding:2px 8px;border-radius:3px;letter-spacing:.5px}
+.method-badge.get{background:#1a3a2a;color:var(--green)}
+.method-badge.post{background:#1a2a3a;color:var(--blue)}
+.hdr-btn{background:none;border:none;color:var(--dis);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1}
+.hdr-btn:hover{color:var(--fg)}
+.card-body{padding:10px 12px;flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0;gap:8px;overscroll-behavior:contain}
+
+/* Sections */
+.section-label{font-size:10px;color:var(--secondFg);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;flex-shrink:0}
+.no-body{font-size:11px;color:var(--dis);font-style:italic;padding:8px 0;flex-shrink:0}
+
+/* Context menu */
+#ctx-menu{display:none;position:fixed;z-index:500;background:var(--second);border:1px solid var(--border);border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.6);padding:4px 0;min-width:160px;font-size:11px}
+#ctx-menu.open{display:block}
+.ctx-item{padding:6px 14px;cursor:pointer;color:var(--fg)}
+.ctx-item:hover{background:var(--selBg)}
+.ctx-item.danger{color:var(--red)}
+.ctx-item.danger:hover{background:rgba(255,117,127,.1)}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0}
+
+/* Card sections */
+.card-section{flex-shrink:0;overflow:hidden}
+.card-section:last-child{flex:1;min-height:0;display:flex;flex-direction:column}
+
+/* Request section */
+.request-section{flex-shrink:0;display:flex;flex-direction:column}
+.json-editor{width:100%;padding:8px;background:var(--deepBg);color:var(--green);border:none;border-left:2px solid transparent;border-radius:0;font:11px/1.5 'Consolas','Menlo',monospace;resize:none;outline:none;tab-size:2;min-height:80px;max-height:250px;overflow-y:auto;field-sizing:content}
+.json-editor.valid{border-left-color:var(--green)}
+.json-editor.invalid{border-left-color:var(--red);color:var(--red)}
+.json-editor::selection{background:rgba(83,120,200,0.3)}
+
+/* Presets */
+.preset-btn{padding:2px 6px;background:var(--deepBg);border:1px solid var(--border);border-radius:3px;color:var(--secondFg);font:9px inherit;cursor:pointer;white-space:nowrap}
+.preset-btn:hover{background:var(--selBg);color:var(--fg);border-color:var(--accent)}
+
+/* Request body: collapsible */
+.request-section.collapsed .json-editor{display:none}
+.req-toggle{font-size:10px;color:var(--secondFg);cursor:pointer;user-select:none;padding:2px 0}
+.req-toggle:hover{color:var(--accent)}
+.request-section.collapsed .req-toggle::before{content:'▶ '}
+.request-section:not(.collapsed) .req-toggle::before{content:'▼ '}
+
+/* Response */
+.response-section{flex:1;min-height:30px;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.response-section.collapsed .response-wrap{display:none}
+.response-section.collapsed .section-label::before{content:'▶ '}
+.response-section:not(.collapsed) .section-label::before{content:'▼ '}
+.resp-header{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.response-wrap{flex:1;min-height:0;overflow-y:auto;background:var(--deepBg);border:1px solid var(--border);border-radius:4px;position:relative}
+.response-json{padding:8px;font:11px/1.5 'Consolas','Menlo',monospace;color:var(--fg)}
+.response-placeholder{padding:8px;color:var(--dis);font-size:11px;font-style:italic}
+
+/* JSON tree viewer */
+.jt{font:11px/1.6 'Consolas','Menlo',monospace;color:var(--fg)}
+.jt details{margin-left:16px}
+.jt summary{cursor:default;list-style:none;user-select:text}
+.jt summary::-webkit-details-marker{display:none}
+.jt summary::before{content:'▶ ';color:var(--dis);font-size:9px;cursor:pointer;user-select:none}
+.jt details[open]>summary::before{content:'▼ '}
+.jt .jk{color:var(--blue)}
+.jt .js{color:var(--green)}
+.jt .jn{color:var(--purple)}
+.jt .jb{color:var(--orange)}
+.jt .jnull{color:var(--dis)}
+.jt .jbrace{color:var(--secondFg)}
+.jt .jcount{color:var(--dis);font-size:9px;margin-left:4px}
+.jt .jleaf{margin-left:16px}
+
+/* Copy btn */
+.copy-btn{position:absolute;top:4px;right:4px;padding:2px 8px;background:var(--second);border:1px solid var(--border);border-radius:3px;color:var(--dis);font:10px inherit;cursor:pointer;opacity:0;transition:opacity .15s}
+.response-wrap:hover .copy-btn{opacity:1}
+.copy-btn:hover{color:var(--fg);border-color:var(--accent)}
+
+/* Send bar */
+.send-bar{display:flex;align-items:center;gap:6px;flex-shrink:0;padding-bottom:6px}
+.send-btn{padding:5px 14px;border:none;border-radius:4px;cursor:pointer;font:11px/1 inherit;font-weight:bold;color:#fff;background:var(--accent);transition:background .15s}
+.send-btn:hover{background:#6488d8}
+.send-btn:disabled{opacity:.5;cursor:not-allowed}
+.send-btn.ok{background:#1a6a3a}
+.send-btn.err{background:#6a1a2a}
+.latency{font-size:10px;color:var(--dis)}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <div class="logo">Construct 3 <span>Clipboard</span> Playground</div>
+  <input id="baseUrl" type="hidden" value="" />
+  <div class="sep"></div>
+  <select id="apiSelect" class="tb-select">
+    <option value="health">GET /health</option>
+    <option value="generate">POST /generate</option>
+    <option value="validate">POST /validate</option>
+  </select>
+  <button class="tb-btn primary" onclick="addCardFromSelect()">+ Add Card</button>
+  <div style="flex:1"></div>
+  <span id="env-status" style="font-size:10px;color:var(--dis)">checking...</span>
+  <button class="tb-btn" onclick="resetView()">Reset View</button>
+</div>
+<div id="ctx-menu"></div>
+
+<div id="canvas" onmousedown="canvasDown(event)" onmousemove="canvasMove(event)" onmouseup="canvasUp(event)" onwheel="canvasWheel(event)">
+  <div id="world"></div>
+</div>
+<div id="zoom-info">100%</div>
+
+<script>
+// ─── Canvas pan/zoom ───
+const canvas = document.getElementById('canvas');
+const world = document.getElementById('world');
+const zoomInfo = document.getElementById('zoom-info');
+let pan = { x: 40, y: 40 }, zoom = 1, panning = false, panStart = {};
+
+function applyTransform() {
+  world.style.transform = `translate(${pan.x}px,${pan.y}px) scale(${zoom})`;
+  canvas.style.backgroundPosition = `${pan.x}px ${pan.y}px`;
+  canvas.style.backgroundSize = `${24 * zoom}px ${24 * zoom}px`;
+  zoomInfo.textContent = Math.round(zoom * 100) + '%';
+}
+
+function canvasDown(e) {
+  if (e.target !== canvas && e.target !== world) return;
+  panning = true; panStart = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  canvas.classList.add('grabbing');
+}
+function canvasMove(e) {
+  if (!panning) return;
+  pan.x = e.clientX - panStart.x; pan.y = e.clientY - panStart.y;
+  applyTransform();
+}
+function canvasUp() { panning = false; canvas.classList.remove('grabbing'); }
+function canvasWheel(e) {
+  if (e.target !== canvas) return;
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const cx = rect.width / 2, cy = rect.height / 2;
+  const wx = (cx - pan.x) / zoom, wy = (cy - pan.y) / zoom;
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  zoom = Math.min(3, Math.max(0.2, zoom * delta));
+  pan.x = cx - wx * zoom; pan.y = cy - wy * zoom;
+  applyTransform();
+}
+function resetView() { pan = { x: 40, y: 40 }; zoom = 1; applyTransform(); }
+applyTransform();
+
+// ─── Card dragging with snap ───
+const SNAP_DIST = 8;
+const CARD_GAP = 12;
+let dragCard = null, dragOff = {}, snapGuideEl = null;
+
+function startDrag(e, card) {
+  if (e.button !== 0) return;
+  dragCard = card;
+  const x = parseFloat(card.style.left) || 0, y = parseFloat(card.style.top) || 0;
+  dragOff = { x: e.clientX / zoom - x, y: e.clientY / zoom - y };
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', endDrag);
+  e.preventDefault();
+}
+function onDrag(e) {
+  if (!dragCard) return;
+  let nx = e.clientX / zoom - dragOff.x;
+  let ny = e.clientY / zoom - dragOff.y;
+  const snap = findSnap(dragCard, nx, ny);
+  if (snap.x !== null) nx = snap.x;
+  if (snap.y !== null) ny = snap.y;
+  dragCard.style.left = nx + 'px';
+  dragCard.style.top = ny + 'px';
+  drawSnapGuides(snap.guides);
+}
+function endDrag() {
+  dragCard = null;
+  drawSnapGuides([]);
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', endDrag);
+}
+
+function findSnap(card, dx, dy) {
+  const cards = document.querySelectorAll('.card');
+  const dw = card.offsetWidth, dh = card.offsetHeight;
+  const edges_x = [dx, dx + dw / 2, dx + dw];
+  const edges_y = [dy, dy + dh / 2, dy + dh];
+  let sx = null, sy = null;
+  const guides = [];
+  cards.forEach(c => {
+    if (c === card) return;
+    const cx = parseFloat(c.style.left) || 0, cy = parseFloat(c.style.top) || 0;
+    const cw = c.offsetWidth, ch = c.offsetHeight;
+    const tx = [cx, cx + cw / 2, cx + cw];
+    const ty = [cy, cy + ch / 2, cy + ch];
+    for (const ex of edges_x) {
+      for (const t of tx) {
+        if (Math.abs(ex - t) < SNAP_DIST && sx === null) {
+          sx = dx + (t - ex);
+          guides.push({ type: 'v', pos: t, y1: Math.min(dy, cy) - 20, y2: Math.max(dy + dh, cy + ch) + 20 });
+        }
+      }
+    }
+    for (const ey of edges_y) {
+      for (const t of ty) {
+        if (Math.abs(ey - t) < SNAP_DIST && sy === null) {
+          sy = dy + (t - ey);
+          guides.push({ type: 'h', pos: t, x1: Math.min(dx, cx) - 20, x2: Math.max(dx + dw, cx + cw) + 20 });
+        }
+      }
+    }
+  });
+  return { x: sx, y: sy, guides };
+}
+
+function drawSnapGuides(guides) {
+  if (!snapGuideEl) {
+    snapGuideEl = document.createElement('div');
+    snapGuideEl.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:1';
+    world.appendChild(snapGuideEl);
+  }
+  snapGuideEl.innerHTML = guides.map(g => {
+    if (g.type === 'v') return `<div style="position:absolute;left:${g.pos}px;top:${g.y1}px;width:1px;height:${g.y2 - g.y1}px;border-left:1px dashed var(--accent);opacity:.6"></div>`;
+    return `<div style="position:absolute;left:${g.x1}px;top:${g.pos}px;width:${g.x2 - g.x1}px;height:1px;border-top:1px dashed var(--accent);opacity:.6"></div>`;
+  }).join('');
+}
+
+// ─── Auto-position new cards ───
+function findOpenPosition() {
+  const cards = document.querySelectorAll('.card');
+  if (!cards.length) return { x: 20, y: 20 };
+  let maxRight = 0, topY = 20;
+  cards.forEach(c => {
+    const x = parseFloat(c.style.left) || 0;
+    const w = c.offsetWidth || 540;
+    if (x + w > maxRight) { maxRight = x + w; topY = parseFloat(c.style.top) || 20; }
+  });
+  return { x: maxRight + CARD_GAP, y: topY };
+}
+
+// ─── API definitions ───
+// Intent IR contract (must match src/generator/events.py and objects.py):
+//   event_sheet:
+//     - conditions/actions: { id, objectClass, parameters?, behaviorType?, isInverted? }
+//     - variable:           { name, type, initialValue, comment? }
+//     - function:           { name, returnType, parameters[], conditions?, actions[], description?, isAsync? }
+//     - group:              { title, description?, events[] }
+//     - sub-events:         add children: [ event, ... ] to an event
+//     - script action:      { type:"script", language?, script:[lines...] }
+//     - call function:      { callFunction:"Name", parameters?:[positional...] }
+//   object_types:           { name, plugin, behaviors?, effects?, instance_variables?, is_global?, properties? }
+//   parameters are keyed by the schema parameter id ({"variable":"Score","value":"0"}), never by index.
+const APIS = {
+  health: {
+    method: 'GET', path: '/health', body: null
+  },
+  generate: {
+    method: 'POST', path: '/generate',
+    body: {
+      intent_ir: {
+        type: "event_sheet",
+        variables: [
+          { name: "Score", type: "number", initialValue: "0", comment: "Player score" }
+        ],
+        events: [
+          {
+            conditions: [
+              { id: "on-start-of-layout", objectClass: "System" }
+            ],
+            actions: [
+              { id: "set-eventvar-value", objectClass: "System",
+                parameters: { variable: "Score", value: "0" } }
+            ]
+          }
+        ]
+      }
+    },
+    presets: [
+      { label: '1 Minimal: variable + on-start', value: {
+        intent_ir: {
+          type: "event_sheet",
+          variables: [{ name: "Score", type: "number", initialValue: "0", comment: "Player score" }],
+          events: [{
+            conditions: [{ id: "on-start-of-layout", objectClass: "System" }],
+            actions: [{ id: "set-eventvar-value", objectClass: "System",
+                        parameters: { variable: "Score", value: "0" } }]
+          }]
+        }
+      }},
+      { label: '2 every-tick + set-text', value: {
+        intent_ir: {
+          type: "event_sheet",
+          events: [
+            { conditions: [{ id: "every-tick", objectClass: "System" }],
+              actions: [{ id: "set-text", objectClass: "HUD",
+                          parameters: { text: "\"FPS: \" & round(1/dt)" } }] }
+          ]
+        }
+      }},
+      { label: '3 Group: Player Logic', value: {
+        intent_ir: {
+          type: "event_sheet",
+          groups: [{
+            title: "Player Logic",
+            description: "Input + movement",
+            events: [{
+              conditions: [{ id: "on-key-pressed", objectClass: "Keyboard",
+                             parameters: { key: 32 } }],
+              actions: [{ id: "set-animation", objectClass: "Player",
+                          parameters: { animation: "\"Jump\"", from: "beginning" } }]
+            }]
+          }]
+        }
+      }},
+      { label: '4 Nested sub-event', value: {
+        intent_ir: {
+          type: "event_sheet",
+          events: [{
+            conditions: [{ id: "every-tick", objectClass: "System" }],
+            actions: [],
+            children: [{
+              conditions: [{ id: "compare-eventvar", objectClass: "System",
+                             parameters: { variable: "Score", comparison: 4, value: "100" } }],
+              actions: [{ id: "set-text", objectClass: "HUD",
+                          parameters: { text: "\"You win!\"" } }]
+            }]
+          }]
+        }
+      }},
+      { label: '5 Function definition + call', value: {
+        intent_ir: {
+          type: "event_sheet",
+          functions: [{
+            name: "AddScore",
+            returnType: "none",
+            description: "Add points to Score",
+            parameters: [{ name: "amount", type: "number", initialValue: "0", comment: "Amount to add" }],
+            actions: [{ id: "add-to-eventvar", objectClass: "System",
+                        parameters: { variable: "Score", value: "amount" } }]
+          }],
+          events: [{
+            conditions: [{ id: "on-collision-with-another-object", objectClass: "Player",
+                           parameters: { object: "Coin" } }],
+            actions: [{ callFunction: "AddScore", parameters: ["10"] }]
+          }]
+        }
+      }},
+      { label: '6 Script action (JS)', value: {
+        intent_ir: {
+          type: "event_sheet",
+          events: [{
+            conditions: [{ id: "on-start-of-layout", objectClass: "System" }],
+            actions: [{ type: "script", language: "javascript",
+                        script: [
+                          "// Log boot info",
+                          "console.log('boot at', Date.now());",
+                          "runtime.globalVars.Score = 0;"
+                        ] }]
+          }]
+        }
+      }},
+      { label: '7 Behavior condition', value: {
+        intent_ir: {
+          type: "event_sheet",
+          events: [{
+            conditions: [
+              { id: "is-jumping", objectClass: "Player", behaviorType: "Platform" }
+            ],
+            actions: [
+              { id: "set-animation", objectClass: "Player",
+                parameters: { animation: "\"Jump\"", from: "beginning" } }
+            ]
+          }]
+        }
+      }},
+      { label: '8 Inverted condition', value: {
+        intent_ir: {
+          type: "event_sheet",
+          events: [{
+            conditions: [
+              { id: "is-on-floor", objectClass: "Player",
+                behaviorType: "Platform", isInverted: true }
+            ],
+            actions: [
+              { id: "set-animation", objectClass: "Player",
+                parameters: { animation: "\"Fall\"", from: "current-frame" } }
+            ]
+          }]
+        }
+      }},
+      { label: '9 Object: Sprite + Platform', value: {
+        intent_ir: {
+          type: "object_types",
+          objects: [{
+            name: "Player",
+            plugin: "Sprite",
+            behaviors: [{ behaviorId: "Platform", name: "Platform" }],
+            instance_variables: [
+              { name: "hp", type: "number", initialValue: "100", comment: "Hit points" }
+            ]
+          }]
+        },
+        options: { include_imagedata: true }
+      }},
+      { label: '10 Object: Keyboard (single-global)', value: {
+        intent_ir: {
+          type: "object_types",
+          objects: [{ name: "Keyboard", plugin: "Keyboard" }]
+        }
+      }},
+      { label: '11 Object: Array (non-world, with properties)', value: {
+        intent_ir: {
+          type: "object_types",
+          objects: [{
+            name: "SaveData",
+            plugin: "Arr",
+            is_global: true,
+            properties: { width: 10, height: 1, depth: 1 }
+          }]
+        }
+      }},
+      { label: '12 Object: Text (no animations)', value: {
+        intent_ir: {
+          type: "object_types",
+          objects: [{
+            name: "HUD",
+            plugin: "Text",
+            instance_variables: [
+              { name: "style", type: "string", initialValue: "\"bold\"", comment: "" }
+            ]
+          }]
+        }
+      }},
+      { label: 'Unknown IR type (error)', value: {
+        intent_ir: { type: "layouts", items: [] }
+      }}
+    ]
+  },
+  validate: {
+    method: 'POST', path: '/validate',
+    body: {
+      clipboard_json: {
+        "is-c3-clipboard-data": true,
+        "type": "events",
+        "items": []
+      }
+    },
+    presets: [
+      { label: 'ok: empty event sheet', value: {
+        clipboard_json: { "is-c3-clipboard-data": true, "type": "events", "items": [] }
+      }},
+      { label: 'ok: variable + comment + block', value: {
+        clipboard_json: {
+          "is-c3-clipboard-data": true,
+          "type": "events",
+          "items": [
+            { eventType: "variable", name: "Score", type: "number", initialValue: "0", comment: "" },
+            { eventType: "comment", text: "Init" },
+            { eventType: "block",
+              conditions: [{ id: "on-start-of-layout", objectClass: "System" }],
+              actions: [{ id: "set-eventvar-value", objectClass: "System",
+                          parameters: { variable: "Score", value: "0" } }] }
+          ]
+        }
+      }},
+      { label: 'ok: object-types Sprite', value: {
+        clipboard_json: {
+          "is-c3-clipboard-data": true,
+          "type": "object-types",
+          "items": [{
+            "name": "Player",
+            "plugin-id": "Sprite",
+            "isGlobal": false,
+            "editorNewInstanceIsReplica": true,
+            "instanceVariables": [],
+            "behaviorTypes": [{ "behaviorId": "Platform", "name": "Platform" }],
+            "effectTypes": [],
+            "animations": { "items": [], "subfolders": [], "name": "Animations" }
+          }],
+          "families": [],
+          "folders": []
+        }
+      }},
+      { label: 'error: missing header', value: {
+        clipboard_json: { "type": "events", "items": [] }
+      }},
+      { label: 'error: invalid type', value: {
+        clipboard_json: { "is-c3-clipboard-data": true, "type": "bananas", "items": [] }
+      }},
+      { label: 'error: items not an array', value: {
+        clipboard_json: { "is-c3-clipboard-data": true, "type": "events", "items": {} }
+      }},
+      { label: 'warning: empty parameters', value: {
+        clipboard_json: {
+          "is-c3-clipboard-data": true,
+          "type": "events",
+          "items": [{
+            eventType: "block",
+            conditions: [{ id: "every-tick", objectClass: "System", parameters: {} }],
+            actions: [{ id: "destroy", objectClass: "Enemy", parameters: {} }]
+          }]
+        }
+      }},
+      { label: 'warning: variable without comment', value: {
+        clipboard_json: {
+          "is-c3-clipboard-data": true,
+          "type": "events",
+          "items": [{ eventType: "variable", name: "HP", type: "number", initialValue: "100" }]
+        }
+      }}
+    ]
+  }
+};
+
+// ─── JSON tree viewer ───
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function jsonTree(obj, key) {
+  const label = key !== undefined ? `<span class="jk">"${esc(key)}"</span>: ` : '';
+  if (obj === null) return `<div class="jleaf">${label}<span class="jnull">null</span></div>`;
+  if (typeof obj === 'boolean') return `<div class="jleaf">${label}<span class="jb">${obj}</span></div>`;
+  if (typeof obj === 'number') return `<div class="jleaf">${label}<span class="jn">${obj}</span></div>`;
+  if (typeof obj === 'string') {
+    const short = obj.length <= 80;
+    const val = esc(short ? obj : obj.slice(0, 80) + '…');
+    return `<div class="jleaf">${label}<span class="js">"${val}"</span></div>`;
+  }
+  if (Array.isArray(obj)) {
+    if (obj.length === 0) return `<div class="jleaf">${label}<span class="jbrace">[]</span></div>`;
+    const children = obj.map(v => jsonTree(v)).join('');
+    return `<details open><summary>${label}<span class="jbrace">[</span><span class="jcount">${obj.length}</span></summary>${children}<div class="jleaf"><span class="jbrace">]</span></div></details>`;
+  }
+  const keys = Object.keys(obj);
+  if (keys.length === 0) return `<div class="jleaf">${label}<span class="jbrace">{}</span></div>`;
+  const children = keys.map(k => jsonTree(obj[k], k)).join('');
+  return `<details open><summary>${label}<span class="jbrace">{</span><span class="jcount">${keys.length}</span></summary>${children}<div class="jleaf"><span class="jbrace">}</span></div></details>`;
+}
+
+function renderJSON(obj) {
+  return `<div class="jt">${jsonTree(obj)}</div>`;
+}
+
+// ─── Card creation ───
+let cardCount = 0;
+
+function createCard(apiKey, posX, posY) {
+  const api = APIS[apiKey];
+  if (!api) return;
+  const id = 'card-' + (++cardCount);
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = id;
+  card.dataset.apiKey = apiKey;
+  card.style.left = posX + 'px';
+  card.style.top = posY + 'px';
+
+  const methodClass = api.method.toLowerCase();
+  const hasBody = api.body !== null;
+
+  const presetOptions = api.presets ? api.presets.map((p, i) =>
+    `<option value="${i}">${p.label}</option>`
+  ).join('') : '';
+
+  card.innerHTML = `
+    <div class="card-header" onmousedown="startDrag(event, this.parentElement)">
+      <span class="method-badge ${methodClass}">${api.method}</span>
+      <span class="card-title">${api.path}</span>
+      <button class="hdr-btn" onclick="this.closest('.card').remove()" title="Close">×</button>
+    </div>
+    <div class="card-body">
+      <div class="send-bar">
+        <button class="send-btn" id="${id}-send" onclick="sendRequest('${id}','${apiKey}')">Send</button>
+        <span class="latency" id="${id}-latency"></span>
+        ${presetOptions ? `<span style="font-size:9px;color:var(--dis);margin-left:auto">preset</span>
+        <select class="tb-select" style="font-size:9px;padding:2px 4px" onchange="applyPreset('${id}',this.value,'${apiKey}');this.selectedIndex=0"><option value="">--</option>${presetOptions}</select>` : ''}
+      </div>
+      ${hasBody ? `
+      <div class="card-section">
+        <div class="request-section" id="${id}-req-section">
+          <div class="req-toggle" onclick="this.parentElement.classList.toggle('collapsed')">Request Body</div>
+          <textarea class="json-editor" id="${id}-editor">${JSON.stringify(api.body, null, 2)}</textarea>
+        </div>
+      </div>` : ''}
+      <div class="card-section">
+        <div class="response-section">
+          <div class="resp-header" onclick="this.parentElement.classList.toggle('collapsed')">
+            <span class="section-label" style="cursor:pointer">Response</span>
+            <button class="copy-btn" style="opacity:1;position:static;margin-left:auto" onclick="event.stopPropagation();copyResponse('${id}')">Copy</button>
+          </div>
+          <div class="response-wrap" id="${id}-resp-wrap">
+            <div class="response-json" id="${id}-resp"><span class="response-placeholder">Send a request to see the response...</span></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  world.appendChild(card);
+  card.addEventListener('mousedown', e => e.stopPropagation());
+
+  const editor = document.getElementById(id + '-editor');
+  if (editor) {
+    editor.addEventListener('input', () => {
+      try { JSON.parse(editor.value); editor.classList.remove('invalid'); editor.classList.add('valid'); }
+      catch { editor.classList.remove('valid'); editor.classList.add('invalid'); }
+    });
+  }
+  return id;
+}
+
+function applyPreset(cardId, presetIdx, apiKey) {
+  const preset = APIS[apiKey].presets?.[presetIdx];
+  if (!preset) return;
+  const editor = document.getElementById(cardId + '-editor');
+  if (editor) {
+    editor.value = JSON.stringify(preset.value, null, 2);
+    editor.classList.remove('invalid');
+    editor.classList.add('valid');
+  }
+}
+
+async function sendRequest(cardId, apiKey) {
+  const api = APIS[apiKey];
+  const baseUrl = document.getElementById('baseUrl').value.replace(/\/+$/, '');
+  const url = baseUrl + api.path;
+  const respEl = document.getElementById(cardId + '-resp');
+  const latencyEl = document.getElementById(cardId + '-latency');
+  const sendBtn = document.getElementById(cardId + '-send');
+  const editor = document.getElementById(cardId + '-editor');
+
+  sendBtn.disabled = true;
+  sendBtn.textContent = '...';
+  sendBtn.className = 'send-btn';
+  latencyEl.textContent = '';
+  respEl.innerHTML = '<span class="response-placeholder">Loading...</span>';
+
+  const opts = { method: api.method, headers: {} };
+  if (api.method === 'POST' && editor) {
+    try {
+      const parsed = JSON.parse(editor.value);
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(parsed);
+    } catch {
+      respEl.innerHTML = '<span class="response-placeholder" style="color:var(--red)">Invalid JSON in request body</span>';
+      sendBtn.disabled = false; sendBtn.textContent = 'Send'; sendBtn.className = 'send-btn';
+      return;
+    }
+  }
+
+  const t0 = performance.now();
+  try {
+    const res = await fetch(url, opts);
+    const ms = Math.round(performance.now() - t0);
+    let data;
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('json')) {
+      data = await res.json();
+    } else {
+      data = await res.text();
+    }
+
+    sendBtn.textContent = res.status;
+    sendBtn.className = 'send-btn ' + (res.ok ? 'ok' : 'err');
+    latencyEl.textContent = ms >= 1000 ? (ms/1000).toFixed(1) + 's' : ms + 'ms';
+
+    if (typeof data === 'string') {
+      respEl.textContent = data;
+    } else {
+      respEl.innerHTML = renderJSON(data);
+      respEl.dataset.raw = JSON.stringify(data, null, 2);
+    }
+  } catch (err) {
+    const ms = Math.round(performance.now() - t0);
+    sendBtn.textContent = 'ERR';
+    sendBtn.className = 'send-btn err';
+    latencyEl.textContent = ms >= 1000 ? (ms/1000).toFixed(1) + 's' : ms + 'ms';
+    respEl.innerHTML = `<span class="response-placeholder" style="color:var(--red)">${esc(err.message)}</span>`;
+  }
+
+  sendBtn.disabled = false;
+  setTimeout(() => { if (!sendBtn.disabled) { sendBtn.textContent = 'Send'; sendBtn.className = 'send-btn'; } }, 3000);
+}
+
+function copyResponse(cardId) {
+  const respEl = document.getElementById(cardId + '-resp');
+  const raw = respEl.dataset.raw || respEl.textContent;
+  navigator.clipboard.writeText(raw).then(() => {
+    const btn = respEl.closest('.response-section').querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1200);
+  });
+}
+
+function addCardFromSelect() {
+  const key = document.getElementById('apiSelect').value;
+  addCardFromKey(key);
+}
+
+// ─── Init: default cards ───
+const healthId = createCard('health', 20, 20);
+createCard('generate', 580, 20);
+applyTransform();
+
+setTimeout(() => {
+  const el = document.getElementById('env-status');
+  fetch('/health')
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(() => { el.textContent = 'ready'; el.style.color = 'var(--green)'; })
+    .catch(() => { el.textContent = 'offline'; el.style.color = 'var(--red)'; });
+  sendRequest(healthId, 'health');
+}, 100);
+
+// ─── Right-click context menu ───
+const ctxMenu = document.getElementById('ctx-menu');
+let ctxCard = null;
+
+document.addEventListener('contextmenu', e => {
+  if (e.target.closest('#toolbar')) return;
+  e.preventDefault();
+  ctxCard = e.target.closest('.card');
+  ctxMenu.innerHTML = ctxCard ? `
+    <div class="ctx-item" onclick="ctxAction('copy')">Copy Response</div>
+    <div class="ctx-item" onclick="ctxAction('clear')">Clear Response</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item danger" onclick="ctxAction('close')">Close Card</div>
+  ` : `
+    <div class="ctx-item" onclick="ctxAction('addGenerate')">Add Generate Card</div>
+    <div class="ctx-item" onclick="ctxAction('addValidate')">Add Validate Card</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" onclick="ctxAction('resetView')">Reset View</div>
+  `;
+  ctxMenu.style.left = e.clientX + 'px';
+  ctxMenu.style.top = e.clientY + 'px';
+  ctxMenu.classList.add('open');
+  requestAnimationFrame(() => {
+    const r = ctxMenu.getBoundingClientRect();
+    if (r.right > innerWidth) ctxMenu.style.left = (e.clientX - r.width) + 'px';
+    if (r.bottom > innerHeight) ctxMenu.style.top = (e.clientY - r.height) + 'px';
+  });
+});
+
+document.addEventListener('click', e => { if (!ctxMenu.contains(e.target)) ctxMenu.classList.remove('open'); });
+
+function ctxAction(action) {
+  ctxMenu.classList.remove('open');
+  if (action === 'copy' && ctxCard) {
+    const resp = ctxCard.querySelector('.response-json');
+    if (resp?.dataset.raw) navigator.clipboard.writeText(resp.dataset.raw);
+  } else if (action === 'clear' && ctxCard) {
+    const resp = ctxCard.querySelector('.response-json');
+    if (resp) resp.innerHTML = '<span class="response-placeholder">Cleared</span>';
+  } else if (action === 'close' && ctxCard) {
+    ctxCard.remove();
+  } else if (action === 'addGenerate') {
+    addCardFromKey('generate');
+  } else if (action === 'addValidate') {
+    addCardFromKey('validate');
+  } else if (action === 'resetView') {
+    resetView();
+  }
+}
+
+function addCardFromKey(key) {
+  const pos = findOpenPosition();
+  createCard(key, pos.x, pos.y);
+}
+</script>
+</body>
+</html>

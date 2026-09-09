@@ -1,38 +1,38 @@
-# Minimal Shape Matrix
+# Minimal shape matrix
 
-每个 `.jsonl` 文件里**一行一个完整的 C3 clipboard JSON**，按"同类 shape、渐进复杂度"组织。直接喂给 validator 做 round-trip 回归测试。
+Each `.jsonl` file holds one complete clipboard payload per line, ordered from the simplest
+shape to the most involved. They are editor captures, kept single-line, and feed
+`tests/test_real_samples.py`.
 
-> C3 里空 `conditions:[]` 的 block 和 `conditions:[{id:"every-tick",objectClass:"System"}]` 的 block **运行时行为等价** — 空条件 = 每帧触发。这给 generator 提供了一个可用的简化策略。
+## `conditions.jsonl`
 
-## `conditions.jsonl` — condition 组合矩阵
-
-| 行 | Shape | 字段特征 |
+| Line | Shape | Fields shown |
 |---:|---|---|
-| 1 | 1 block：every-tick + inverted compare | 基础 `isInverted` |
-| 2 | 1 block：两个 inverted (AND) | 多 inverted 默认 AND |
-| 3 | 1 block：inverted + normal (AND) | 混合 inverted |
-| 4 | 1 block：inverted + normal + `isOrBlock:true` | **`isOrBlock`** — block 级 OR 关系 |
-| 5 | 1 block：两个 normal + `isOrBlock:true` | 纯 OR |
-| 6 | 2 siblings：normal block + else-block (2 conds) | else 链基础 |
-| 7 | 2 siblings：normal block + else-block (1 cond) | |
-| 8 | 2 siblings：inverted block + else-block | inverted + else 组合 |
+| 1 | one block: `every-tick` + inverted compare | `isInverted` |
+| 2 | one block: two inverted conditions (AND) | several `isInverted` in one block |
+| 3 | one block: inverted + normal (AND) | mixed |
+| 4 | one block: inverted + normal with `isOrBlock:true` | `isOrBlock` on the block |
+| 5 | one block: two normal conditions with `isOrBlock:true` | plain OR |
+| 6 | two siblings: block + else-block with two conditions | `else` followed by another condition |
+| 7 | two siblings: block + else-block with one condition | |
+| 8 | two siblings: inverted block + else-block | `isInverted` and `else` together |
 
-## `groups.jsonl` — group 变体
+## `groups.jsonl`
 
-| 行 | Shape | 字段特征 |
+| Line | Shape | Fields shown |
 |---:|---|---|
-| 1 | 空 group | 空 `children` |
-| 2 | group 含 1 block (normal cond) | |
-| 3 | group 含 1 block (trigger-once-while-true) | trigger 类条件 |
-| 4 | group 含 if/else (inverted + else) | group 内 else 链 |
-| 5 | 嵌套 group：3 层嵌套 + 兄弟 group | **group in group** — 结构递归 |
+| 1 | empty group | empty `children` |
+| 2 | group with one block (normal condition) | |
+| 3 | group with one block (`trigger-once-while-true`) | trigger condition |
+| 4 | group with if/else (inverted + else) | else chain inside a group |
+| 5 | three nested groups plus a sibling group | groups inside groups |
 
-## `variables.jsonl` — variable 位置 & 修饰符
+## `variables.jsonl`
 
-| 行 | Shape | 字段特征 |
+| Line | Shape | Fields shown |
 |---:|---|---|
-| 1 | 顶层 variable + group | variable 作为 sheet-level var |
-| 2 | group 内 variable + block | variable 作为 group-scoped var |
-| 3 | group 内 variable with `isStatic:true` | **`isStatic`** 修饰 |
+| 1 | sheet-level variable + group | variable at sheet scope |
+| 2 | variable inside a group + block | variable at group scope |
+| 3 | variable inside a group with `isStatic:true` | `isStatic` |
 
-> 三行都带 `isStatic` + `isConstant` 字段 — builder 当前的 `build_variable` 没这俩字段，需要补。
+Every variable line carries both `isStatic` and `isConstant`; the editor always writes them.
