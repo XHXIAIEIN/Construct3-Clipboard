@@ -12,6 +12,7 @@ from src.generator.builder import (
     build_block,
     build_condition,
     build_function_block,
+    build_function_parameter,
     build_group,
     build_script_action,
     build_variable,
@@ -84,7 +85,7 @@ class EventSheetGenerator:
             object_class=cond["objectClass"],
             parameters=params,
             behavior_type=cond.get("behaviorType"),
-            inverted=cond.get("isInverted", cond.get("inverted", False)),
+            inverted=cond.get("isInverted", False),
         )
 
     def _build_action_node(self, action: dict) -> dict:
@@ -130,25 +131,27 @@ class EventSheetGenerator:
     # ------------------------------------------------------------------
 
     def _build_function_node(self, func: dict) -> dict:
-        params: list[dict] | None = None
-        if func.get("parameters"):
-            params = [
-                build_variable(
-                    name=p["name"],
-                    var_type=p.get("type", "number"),
-                    initial_value=p.get("initialValue", "0"),
-                    comment=p.get("comment", ""),
-                )
-                for p in func["parameters"]
-            ]
+        params = [
+            build_function_parameter(
+                name=p["name"],
+                var_type=p.get("type", "number"),
+                initial_value=p.get("initialValue", "0"),
+                comment=p.get("comment", ""),
+            )
+            for p in func.get("parameters") or []
+        ]
 
+        conditions = [self._build_condition_node(c) for c in func.get("conditions", [])]
         actions = [self._build_action_node(a) for a in func.get("actions", [])]
 
         return build_function_block(
             name=func["name"],
             return_type=func.get("returnType", "none"),
             parameters=params,
+            conditions=conditions,
             actions=actions,
             description=func.get("description", ""),
+            category=func.get("category", ""),
+            copy_picked=func.get("copyPicked", False),
             is_async=func.get("isAsync", False),
         )

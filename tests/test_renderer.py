@@ -129,7 +129,8 @@ def test_render_object_types_with_imagedata(object_types_ir):
     assert result["success"] is True
     assert result["metadata"]["has_imagedata"] is True
     clipboard = result["clipboard_json"]
-    assert clipboard.get("imageData", "").startswith("data:image/png;base64,")
+    assert isinstance(clipboard["imageData"], list)
+    assert clipboard["imageData"][0].startswith("data:image/png;base64,")
 
 
 def test_render_object_types_without_imagedata(object_types_ir):
@@ -153,3 +154,15 @@ def test_render_singleton_no_imagedata():
     assert result["success"] is True
     # Keyboard has no animations → image_data stays None
     assert result["metadata"]["has_imagedata"] is False
+
+
+def test_render_tiledbg_gets_imagedata():
+    ir = {
+        "type": "object_types",
+        "objects": [{"name": "Ground", "plugin": "TiledBg"}],
+    }
+    result = render_ir(ir, options={"include_imagedata": True})
+
+    assert result["success"] is True
+    assert result["metadata"]["has_imagedata"] is True
+    assert "image" in result["clipboard_json"]["items"][0]

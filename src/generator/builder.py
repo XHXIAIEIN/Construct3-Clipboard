@@ -45,8 +45,8 @@ def build_condition(
 ) -> dict:
     """Build a single condition node.
 
-    `inverted=False` is the default and may be omitted from the output to
-    keep the JSON compact; set to True to include the flag explicitly.
+    The editor writes ``isInverted`` only when it is true, so the field is
+    omitted for the default.
     """
     node: dict[str, Any] = {
         "id": ace_id,
@@ -147,6 +147,21 @@ def build_script_action(
     }
 
 
+def build_function_parameter(
+    name: str,
+    var_type: str = "number",
+    initial_value: str = "0",
+    comment: str = "",
+) -> dict:
+    """Build one entry of a function block's ``functionParameters`` list."""
+    return {
+        "name": name,
+        "type": var_type,
+        "initialValue": initial_value,
+        "comment": comment,
+    }
+
+
 def build_function_block(
     name: str,
     *,
@@ -155,31 +170,38 @@ def build_function_block(
     conditions: list[dict] | None = None,
     actions: list[dict] | None = None,
     description: str = "",
+    category: str = "",
+    copy_picked: bool = False,
     is_async: bool = False,
 ) -> dict:
     """Build a function-block event node.
 
+    Field names and order follow editor output: the ``function*`` fields
+    come first and ``eventType`` after them.
+
     Args:
-        name: Function name (functionName in C3 schema).
+        name: Function name (functionName).
         return_type: One of 'none', 'number', 'string', 'any'.
-        parameters: Optional list of parameter definitions.
+        parameters: Parameter definitions from :func:`build_function_parameter`.
         conditions: Conditions inside the function block.
         actions: Actions inside the function block.
-        description: Human-readable description.
-        is_async: Whether the function is async.
+        description: Human-readable description (functionDescription).
+        category: Category shown in the editor (functionCategory).
+        copy_picked: Whether the function copies picked instances (functionCopyPicked).
+        is_async: Whether the function is async (functionIsAsync).
     """
-    node: dict[str, Any] = {
-        "eventType": "function-block",
+    return {
         "functionName": name,
+        "functionDescription": description,
+        "functionCategory": category,
         "functionReturnType": return_type,
-        "description": description,
-        "isAsync": is_async,
+        "functionCopyPicked": copy_picked,
+        "functionIsAsync": is_async,
+        "functionParameters": list(parameters) if parameters else [],
+        "eventType": "function-block",
         "conditions": list(conditions) if conditions is not None else [],
         "actions": list(actions) if actions is not None else [],
     }
-    if parameters is not None:
-        node["parameters"] = list(parameters)
-    return node
 
 
 # ---------------------------------------------------------------------------

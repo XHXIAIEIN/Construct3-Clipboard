@@ -165,6 +165,22 @@ class TestFromIREvents:
         assert cond.get("isInverted") is True
         assert_valid(result, validator)
 
+    def test_legacy_inverted_key_is_ignored(self, gen, validator):
+        ir = {
+            "type": "event_sheet",
+            "events": [
+                {
+                    "conditions": [
+                        {"id": "is-alive", "objectClass": "Player", "inverted": True}
+                    ],
+                    "actions": [],
+                }
+            ],
+        }
+        cond = gen.from_ir(ir)["items"][0]["conditions"][0]
+        assert "isInverted" not in cond
+        assert "inverted" not in cond
+
     def test_ordering_variables_before_events(self, gen, validator):
         ir = {
             "type": "event_sheet",
@@ -292,8 +308,12 @@ class TestFromIRWithFunctionBlocks:
         assert fb["eventType"] == "function-block"
         assert fb["functionName"] == "add"
         assert fb["functionReturnType"] == "number"
-        assert fb["isAsync"] is False
-        assert fb["description"] == "Adds two numbers"
+        assert fb["functionIsAsync"] is False
+        assert fb["functionDescription"] == "Adds two numbers"
+        assert fb["functionParameters"] == [
+            {"name": "a", "type": "number", "initialValue": "0", "comment": ""},
+            {"name": "b", "type": "number", "initialValue": "0", "comment": ""},
+        ]
 
         # Script action
         script_act = fb["actions"][0]
@@ -319,7 +339,7 @@ class TestFromIRWithFunctionBlocks:
         }
         result = gen.from_ir(ir)
         fb = result["items"][0]
-        assert fb["isAsync"] is True
+        assert fb["functionIsAsync"] is True
         assert fb["functionReturnType"] == "any"
         assert_valid(result, validator)
 
@@ -364,7 +384,8 @@ class TestFromIRWithFunctionBlocks:
         }
         result = gen.from_ir(ir)
         fb = result["items"][0]
-        # parameters key must not be present when empty (builder omits it)
+        # the editor always writes functionParameters, empty or not
+        assert fb["functionParameters"] == []
         assert "parameters" not in fb
         assert_valid(result, validator)
 

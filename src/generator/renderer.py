@@ -70,7 +70,7 @@ def _render_objects(ir: dict, opts: dict) -> tuple[dict, dict]:
     """Build object-types clipboard from IR and return (clipboard_json, metadata)."""
     gen = ObjectTypeGenerator()
     items: list[dict] = []
-    image_data: str | None = None
+    image_data: list[str] | None = None
 
     for obj in ir.get("objects", []):
         item = gen.build(
@@ -80,14 +80,15 @@ def _render_objects(ir: dict, opts: dict) -> tuple[dict, dict]:
             effects=obj.get("effects"),
             instance_variables=obj.get("instance_variables"),
             is_global=obj.get("is_global", False),
+            properties=obj.get("properties"),
         )
         items.append(item)
 
     if opts.get("include_imagedata"):
-        # Generate a single placeholder for any item that carries animations
-        animated = [it for it in items if "animations" in it]
-        if animated:
-            image_data = generate_placeholder(width=32, height=32)
+        # Every generated frame/image uses imageDataIndex 0, so one
+        # placeholder serves all items that carry animations or an image.
+        if any("animations" in it or "image" in it for it in items):
+            image_data = [generate_placeholder(width=32, height=32)]
 
     clipboard_json = gen.build_clipboard(items, image_data=image_data)
 

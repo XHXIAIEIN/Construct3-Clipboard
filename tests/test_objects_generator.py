@@ -1,4 +1,8 @@
 """Tests for ObjectTypeGenerator."""
+import json
+import re
+from pathlib import Path
+
 import pytest
 
 from src.generator.objects import ObjectTypeGenerator
@@ -31,11 +35,12 @@ def test_sprite_object(gen):
 
 
 def test_singleton_object(gen):
-    """Keyboard is singleton — only singleglobal-inst, nothing else."""
+    """Keyboard is singleton — name, plugin-id and singleglobal-inst only."""
     obj = gen.build("Keyboard", "Keyboard")
 
+    assert obj["name"] == "Keyboard"
     assert obj["plugin-id"] == "Keyboard"
-    assert "singleglobal-inst" in obj
+    assert obj["singleglobal-inst"] == {"type": "Keyboard", "properties": {}, "tags": ""}
     assert "nonworld-inst" not in obj
     assert "animations" not in obj
     assert "behaviorTypes" not in obj
@@ -45,16 +50,21 @@ def test_singleton_object(gen):
 
 def test_nonworld_object(gen):
     """Arr (non-world) should have nonworld-inst, no animations."""
-    obj = gen.build("MyArray", "Arr")
+    obj = gen.build("MyArray", "Arr", properties={"width": 10, "height": 1, "depth": 1})
 
+    assert obj["name"] == "MyArray"
     assert obj["plugin-id"] == "Arr"
-    assert "nonworld-inst" in obj
+    assert obj["nonworld-inst"] == {
+        "type": "MyArray",
+        "properties": {"width": 10, "height": 1, "depth": 1},
+        "tags": "",
+    }
     assert "singleglobal-inst" not in obj
     assert "animations" not in obj
-    assert isinstance(obj["instanceVariables"], list)
-    # non-world doesn't get behaviorTypes / effectTypes
+    # non-world doesn't get behaviorTypes / effectTypes / instanceVariables
     assert "behaviorTypes" not in obj
     assert "effectTypes" not in obj
+    assert "instanceVariables" not in obj
 
 
 def test_text_object(gen):
@@ -144,12 +154,12 @@ def test_build_clipboard_envelope(gen):
 
 
 def test_build_clipboard_with_image_data(gen):
-    """imageData should be included when provided."""
+    """imageData is a list of data URIs referenced by imageDataIndex."""
     items = [gen.build("Player", "Sprite")]
     fake_png = "data:image/png;base64,abc123"
-    clipboard = gen.build_clipboard(items, image_data=fake_png)
+    clipboard = gen.build_clipboard(items, image_data=[fake_png])
 
-    assert clipboard["imageData"] == fake_png
+    assert clipboard["imageData"] == [fake_png]
 
 
 def test_effects_kwarg(gen):
@@ -157,3 +167,53 @@ def test_effects_kwarg(gen):
     effects = [{"id": "Bloom", "name": "Bloom"}]
     obj = gen.build("Player", "Sprite", effects=effects)
     assert obj["effectTypes"] == effects
+
+
+# ---------------------------------------------------------------------------
+# Key sets must match the templates in docs/object-templates.md
+# ---------------------------------------------------------------------------
+
+TEMPLATES_DOC = Path(__file__).resolve().parent.parent / "docs" / "object-templates.md"
+
+
+def _template_items() -> dict[str, dict]:
+    """Return {plugin-id: item} for every object-types template in the doc."""
+    text = TEMPLATES_DOC.read_text(encoding="utf-8")
+    text = re.sub(r"\{(WIDTH|HEIGHT)\}", "32", text)
+    text = re.sub(r"\{[A-Z_]+\}", "X", text)
+    items: dict[str, dict] = {}
+    for block in re.findall(r"```json\n(.*?)\n```", text, flags=re.S):
+        block = block.strip()
+        if not block.startswith('{"is-c3-clipboard-data"'):
+            continue
+        for item in json.loads(block)["items"]:
+            items[item["plugin-id"]] = item
+    return items
+
+
+TEMPLATE_ITEMS = _template_items()
+
+
+def _key_tree(node):
+    """Nested structure of dict keys, ignoring leaf values."""
+    if isinstance(node, dict):
+        return {k: _key_tree(v) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_key_tree(node[0])] if node else []
+    return None
+
+
+@pytest.mark.parametrize("plugin_id", sorted(TEMPLATE_ITEMS))
+def test_generated_keys_match_template(gen, plugin_id):
+    template = TEMPLATE_ITEMS[plugin_id]
+    obj = gen.build(template["name"], plugin_id, properties=_template_properties(template))
+    assert _key_tree(obj) == _key_tree(template), plugin_id
+
+
+def _template_properties(template: dict) -> dict | None:
+    inst = template.get("singleglobal-inst") or template.get("nonworld-inst")
+    return inst["properties"] if inst else None
+
+
+def test_templates_cover_every_category():
+    assert {"Sprite", "TiledBg", "NinePatch", "Tilemap", "Text", "Keyboard", "Arr"} <= set(TEMPLATE_ITEMS)

@@ -9,6 +9,7 @@ from src.generator.builder import (
     build_block,
     build_script_action,
     build_function_block,
+    build_function_parameter,
     wrap_clipboard,
 )
 from src.validator.structural import StructuralValidator
@@ -249,16 +250,29 @@ class TestBuildFunctionBlock:
 
     def test_function_block_async(self):
         fb = build_function_block("AsyncFunc", is_async=True)
-        assert fb.get("isAsync", False) is True
+        assert fb["functionIsAsync"] is True
 
     def test_function_block_with_description(self):
         fb = build_function_block("Func", description="Does stuff")
-        assert fb.get("description", "") == "Does stuff"
+        assert fb["functionDescription"] == "Does stuff"
 
     def test_function_block_with_parameters(self):
-        params = [{"name": "x", "type": "number"}]
+        params = [build_function_parameter("x", "number", "0", "")]
         fb = build_function_block("Add", parameters=params)
-        assert fb.get("parameters") == params
+        assert fb["functionParameters"] == [
+            {"name": "x", "type": "number", "initialValue": "0", "comment": ""}
+        ]
+
+    def test_function_block_keys_match_editor_output(self):
+        fb = build_function_block("Func")
+        assert list(fb.keys()) == [
+            "functionName", "functionDescription", "functionCategory",
+            "functionReturnType", "functionCopyPicked", "functionIsAsync",
+            "functionParameters", "eventType", "conditions", "actions",
+        ]
+        assert fb["functionParameters"] == []
+        assert fb["functionCopyPicked"] is False
+        assert fb["functionCategory"] == ""
 
 
 # ---------------------------------------------------------------------------
