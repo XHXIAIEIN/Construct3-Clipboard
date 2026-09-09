@@ -61,16 +61,16 @@ class TestBuildCondition:
         assert cond["id"] == "is-overlapping"
         assert cond["objectClass"] == "Player"
         assert "parameters" not in cond
-        assert cond.get("inverted", False) is False
+        assert cond.get("isInverted", False) is False
 
     def test_condition_inverted(self):
         cond = build_condition("is-overlapping", "Player", inverted=True)
-        assert cond["inverted"] is True
+        assert cond["isInverted"] is True
 
     def test_condition_not_inverted_by_default(self):
         cond = build_condition("is-overlapping", "Player")
-        # inverted=False may be omitted entirely or set to False — both are fine
-        assert cond.get("inverted", False) is False
+        # isInverted=False may be omitted entirely or set to False — both are fine
+        assert cond.get("isInverted", False) is False
 
     def test_condition_with_parameters(self):
         cond = build_condition("compare", "Player", parameters={"0": 2})

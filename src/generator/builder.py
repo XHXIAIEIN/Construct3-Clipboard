@@ -57,7 +57,7 @@ def build_condition(
     if behavior_type is not None:
         node["behaviorType"] = behavior_type
     if inverted:
-        node["inverted"] = True
+        node["isInverted"] = True
     return node
 
 

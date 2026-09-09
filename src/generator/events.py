@@ -84,7 +84,7 @@ class EventSheetGenerator:
             object_class=cond["objectClass"],
             parameters=params,
             behavior_type=cond.get("behaviorType"),
-            inverted=cond.get("inverted", False),
+            inverted=cond.get("isInverted", cond.get("inverted", False)),
         )
 
     def _build_action_node(self, action: dict) -> dict:

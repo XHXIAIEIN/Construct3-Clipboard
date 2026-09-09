@@ -154,7 +154,7 @@ class TestFromIREvents:
             "events": [
                 {
                     "conditions": [
-                        {"id": "is-alive", "objectClass": "Player", "inverted": True}
+                        {"id": "is-alive", "objectClass": "Player", "isInverted": True}
                     ],
                     "actions": [],
                 }
@@ -162,7 +162,7 @@ class TestFromIREvents:
         }
         result = gen.from_ir(ir)
         cond = result["items"][0]["conditions"][0]
-        assert cond.get("inverted") is True
+        assert cond.get("isInverted") is True
         assert_valid(result, validator)
 
     def test_ordering_variables_before_events(self, gen, validator):
